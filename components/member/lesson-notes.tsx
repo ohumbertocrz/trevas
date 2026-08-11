@@ -1,0 +1,10 @@
+"use client";
+
+import { Clock3, Trash2 } from "lucide-react";
+import { useFormStatus } from "react-dom";
+import { createLessonNote, deleteLessonNote } from "@/app/app/aula/actions";
+
+function SubmitButton() { const { pending } = useFormStatus(); return <button className="primary-button" type="submit" disabled={pending}>{pending ? "Salvando..." : "Salvar anotação"}</button>; }
+export function LessonNotes({ lessonId, slug, notes }: { lessonId: string; slug: string; notes: Array<{ id: string; content: string; timestampSeconds: number | null; createdAt: string | null }> }) {
+  return <section className="lesson-notes"><div className="lesson-notes-heading"><div><span className="kicker">Caderno privado</span><h2>Anotações da aula</h2></div><small>Visíveis somente para você</small></div><form className="panel note-form" action={createLessonNote}><input type="hidden" name="lessonId" value={lessonId} /><input type="hidden" name="slug" value={slug} /><label>Anotação<textarea name="content" rows={4} required maxLength={5000} placeholder="Registre uma ideia, dúvida ou conexão..." /></label><label>Timestamp do vídeo, em segundos (opcional)<input name="timestampSeconds" type="number" min="0" step="1" placeholder="Ex.: 2062" /></label><SubmitButton /></form>{notes.length > 0 && <div className="notes-list">{notes.map((note) => <article className="panel note-item" key={note.id}><div>{note.timestampSeconds !== null && <a className="note-timestamp" href={`/app/aula/${slug}?t=${Math.floor(note.timestampSeconds)}`}><Clock3 size={14} />{Math.floor(note.timestampSeconds / 60)}:{String(Math.floor(note.timestampSeconds % 60)).padStart(2, "0")}</a>}<p>{note.content}</p><small>{note.createdAt ? new Date(note.createdAt).toLocaleDateString("pt-BR") : "Agora"}</small></div><form action={deleteLessonNote}><input type="hidden" name="noteId" value={note.id} /><input type="hidden" name="slug" value={slug} /><button className="icon-button" type="submit" aria-label="Excluir anotação"><Trash2 size={16} /></button></form></article>)}</div>}</section>;
+}

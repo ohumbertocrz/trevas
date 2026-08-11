@@ -22,8 +22,8 @@ export interface LessonInput {
   slug: string;
   description: string;
   status: ContentStatus;
-  thumbnailUrl: string;
-  vimeoId: string;
+  thumbnailPath: string;
+  vimeoEmbedUrl: string;
   durationMinutes: number;
   tags: string[];
   transcript: string;

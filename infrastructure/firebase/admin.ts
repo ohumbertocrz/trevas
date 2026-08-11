@@ -1,6 +1,7 @@
 import { getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 
 function getAdminApp() {
   return getApps()[0] ?? initializeApp({
@@ -11,3 +12,4 @@ function getAdminApp() {
 
 export const adminAuth = () => getAuth(getAdminApp());
 export const adminFirestore = () => getFirestore(getAdminApp());
+export const adminStorage = () => getStorage(getAdminApp());

@@ -61,10 +61,37 @@ service cloud.firestore {
       allow write: if hasRole(['admin', 'editor']);
     }
 
+    match /materials/{materialId} {
+      allow read: if isStaff() || (hasTrevasAccess() && resource.data.visibility == 'published');
+      allow write: if hasRole(['admin', 'editor']);
+    }
+
+    match /lessonMaterials/{linkId} {
+      allow read: if hasTrevasAccess() || isStaff();
+      allow write: if hasRole(['admin', 'editor']);
+    }
+
+    match /laboratories/{laboratoryId} {
+      allow read: if isStaff() || (hasTrevasAccess() && resource.data.status == 'published');
+      allow write: if hasRole(['admin', 'editor']);
+    }
+
+    match /laboratoryAttempts/{attemptId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /libraryReferences/{referenceId} {
+      allow read: if isStaff() || (hasTrevasAccess() && resource.data.status == 'published');
+      allow write: if hasRole(['admin', 'editor']);
+    }
+
     match /{collectionName}/{documentId} {
-      allow read: if collectionName in ['materials', 'laboratories', 'cases', 'libraryItems', 'announcements']
+      allow read: if collectionName in ['cases', 'libraryItems', 'announcements']
         && (hasTrevasAccess() || isStaff());
-      allow write: if collectionName in ['materials', 'laboratories', 'cases', 'libraryItems', 'announcements']
+      allow write: if collectionName in ['cases', 'libraryItems', 'announcements']
         && hasRole(['admin', 'editor']);
     }
 
@@ -75,6 +102,22 @@ service cloud.firestore {
         && request.auth.uid == resource.data.userId
         && request.resource.data.userId == resource.data.userId;
       allow delete: if false;
+    }
+
+    match /lessonNotes/{noteId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn() && request.auth.uid == request.resource.data.userId;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid && request.resource.data.userId == resource.data.userId;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    match /savedItems/{itemId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn() && request.auth.uid == request.resource.data.userId;
+      allow update: if signedIn()
+        && request.auth.uid == resource.data.userId
+        && request.resource.data.userId == resource.data.userId;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
     }
 
     match /auditLogs/{logId} {

@@ -36,14 +36,24 @@ export interface LessonContent {
   description: string;
   status: ContentStatus;
   order: number;
-  thumbnailUrl: string;
-  vimeoId: string;
+  thumbnailPath: string;
+  vimeoEmbedUrl: string;
   durationMinutes: number;
   tags: string[];
   transcript: string;
   publishedAt: Date | null;
   scheduledAt: Date | null;
   updatedAt: Date | null;
+}
+
+export function isVimeoEmbedUrl(value: string) {
+  if (!value) return true;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.hostname === "player.vimeo.com" && /^\/video\/\d+/.test(url.pathname);
+  } catch {
+    return false;
+  }
 }
 
 export function slugifyContent(value: string) {
