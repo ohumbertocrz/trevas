@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "start": "node server.cjs"
+  },
+  "engines": {
+    "node": "22"
+  }
+}
