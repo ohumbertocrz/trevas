@@ -1,0 +1,89 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(roles) {
+      return signedIn() && profile().status == 'active' && profile().roles.hasAny(roles);
+    }
+
+    function isAdmin() {
+      return hasRole(['admin']);
+    }
+
+    function isStaff() {
+      return hasRole(['admin', 'editor', 'support', 'teacher']);
+    }
+
+    function hasTrevasAccess() {
+      let entitlement = get(/databases/$(database)/documents/entitlements/$(request.auth.uid + '_trevas-completo')).data;
+      return signedIn()
+        && entitlement.status == 'active'
+        && entitlement.startsAt <= request.time
+        && (entitlement.expiresAt == null || entitlement.expiresAt > request.time);
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn() && (request.auth.uid == userId || isStaff());
+      allow create: if false;
+      allow update: if isAdmin() || (
+        signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'updatedAt'])
+      );
+      allow delete: if false;
+    }
+
+    match /entitlements/{entitlementId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow write: if isAdmin() || hasRole(['support']);
+    }
+
+    match /courses/{courseId} {
+      allow read: if isStaff() || (hasTrevasAccess() && resource.data.status == 'published');
+      allow write: if hasRole(['admin', 'editor']);
+    }
+
+    match /modules/{moduleId} {
+      allow read: if isStaff() || (hasTrevasAccess() && resource.data.status == 'published');
+      allow write: if hasRole(['admin', 'editor']);
+    }
+
+    match /lessons/{lessonId} {
+      allow read: if isStaff() || (hasTrevasAccess() && resource.data.status == 'published');
+      allow write: if hasRole(['admin', 'editor']);
+    }
+
+    match /{collectionName}/{documentId} {
+      allow read: if collectionName in ['materials', 'laboratories', 'cases', 'libraryItems', 'announcements']
+        && (hasTrevasAccess() || isStaff());
+      allow write: if collectionName in ['materials', 'laboratories', 'cases', 'libraryItems', 'announcements']
+        && hasRole(['admin', 'editor']);
+    }
+
+    match /lessonProgress/{progressId} {
+      allow read: if signedIn() && request.auth.uid == resource.data.userId;
+      allow create: if signedIn() && request.auth.uid == request.resource.data.userId;
+      allow update: if signedIn()
+        && request.auth.uid == resource.data.userId
+        && request.resource.data.userId == resource.data.userId;
+      allow delete: if false;
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

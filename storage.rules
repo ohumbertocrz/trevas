@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function profile() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isStaff() {
+      return signedIn() && profile().status == 'active' && profile().roles.hasAny(['admin', 'editor', 'support', 'teacher']);
+    }
+
+    function hasTrevasAccess() {
+      let entitlement = firestore.get(/databases/(default)/documents/entitlements/$(request.auth.uid + '_trevas-completo')).data;
+      return signedIn()
+        && entitlement.status == 'active'
+        && entitlement.startsAt <= request.time
+        && (entitlement.expiresAt == null || entitlement.expiresAt > request.time);
+    }
+
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if isStaff() && request.resource.size < 10 * 1024 * 1024;
+    }
+
+    match /protected/{allPaths=**} {
+      allow read: if hasTrevasAccess() || isStaff();
+      allow write: if isStaff() && request.resource.size < 50 * 1024 * 1024;
+    }
+
+    match /users/{userId}/{allPaths=**} {
+      allow read: if signedIn() && (request.auth.uid == userId || isStaff());
+      allow write: if signedIn() && request.auth.uid == userId && request.resource.size < 10 * 1024 * 1024;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
