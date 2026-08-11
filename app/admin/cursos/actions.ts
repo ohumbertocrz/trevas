@@ -4,9 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { assertCanManageContent } from "@/application/content/permissions";
+import { LESSON_THUMBNAIL_MAX_BYTES, LESSON_THUMBNAIL_TYPES } from "@/application/ports/media-storage";
 import { requireAdministrativeUser } from "@/application/access/session";
-import { CONTENT_STATUSES, slugifyContent } from "@/domain/content/entities";
+import { CONTENT_STATUSES, isVimeoEmbedUrl, slugifyContent } from "@/domain/content/entities";
 import { contentRepository } from "@/infrastructure/repositories/firebase-content-repository";
+import { mediaStorage } from "@/infrastructure/storage/firebase-media-storage";
+import { libraryRepository } from "@/infrastructure/repositories/firebase-library-repository";
 
 const identifier = z.string().min(1).max(128);
 const status = z.enum(CONTENT_STATUSES);
@@ -36,8 +39,8 @@ const lessonFields = {
   slug: z.string().trim().max(180).optional(),
   description: z.string().trim().max(8000).optional().default(""),
   status: status.optional().default("draft"),
-  thumbnailUrl: z.string().trim().max(1000).optional().default(""),
-  vimeoId: z.string().trim().max(500).optional().default(""),
+  thumbnailPath: z.string().trim().max(1000).optional().default(""),
+  vimeoEmbedUrl: z.string().trim().max(500).refine(isVimeoEmbedUrl, "Use uma URL de embed do player.vimeo.com.").optional().default(""),
   durationMinutes: z.coerce.number().int().min(0).max(1440).optional().default(0),
   tags: z.string().trim().max(1000).optional().default(""),
   transcript: z.string().trim().max(200000).optional().default(""),
@@ -68,8 +71,8 @@ function lessonInput(input: z.infer<typeof lessonSchema>) {
     slug: slugifyContent(input.slug || input.title),
     description: input.description,
     status: input.status,
-    thumbnailUrl: input.thumbnailUrl,
-    vimeoId: input.vimeoId,
+    thumbnailPath: input.thumbnailPath,
+    vimeoEmbedUrl: input.vimeoEmbedUrl,
     durationMinutes: input.durationMinutes,
     tags: input.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
     transcript: input.transcript,
@@ -138,7 +141,16 @@ export async function createLesson(formData: FormData) {
 export async function updateLesson(formData: FormData) {
   const actor = await contentActor();
   const input = lessonUpdateSchema.parse(Object.fromEntries(formData));
-  await contentRepository.updateLesson(input.lessonId, lessonInput(input), actor.id);
+  let thumbnailPath = input.thumbnailPath;
+  const thumbnail = formData.get("thumbnail");
+  if (thumbnail instanceof File && thumbnail.size > 0) {
+    if (thumbnail.size > LESSON_THUMBNAIL_MAX_BYTES) throw new Error("A thumbnail deve ter no máximo 2 MB.");
+    if (!LESSON_THUMBNAIL_TYPES.includes(thumbnail.type as (typeof LESSON_THUMBNAIL_TYPES)[number])) throw new Error("A thumbnail deve ser JPG, PNG ou WebP.");
+    thumbnailPath = await mediaStorage.saveLessonThumbnail({ actorId: actor.id, courseId: input.courseId, lessonId: input.lessonId, file: thumbnail });
+  }
+  await contentRepository.updateLesson(input.lessonId, { ...lessonInput(input), thumbnailPath }, actor.id);
+  const materialIds = formData.getAll("materialIds").filter((value): value is string => typeof value === "string");
+  await libraryRepository.setLessonMaterials(input.lessonId, materialIds, actor.id);
   revalidatePath(`/admin/cursos/${input.courseId}`);
   revalidatePath(`/admin/cursos/${input.courseId}/aulas/${input.lessonId}`);
 }

@@ -3,6 +3,7 @@
 import {
   Bell,
   BookOpen,
+  Bookmark,
   Bot,
   Files,
   FlaskConical,
@@ -20,6 +21,7 @@ const navigation = [
   { href: "/app/curso", label: "Curso", icon: BookOpen },
   { href: "/app/laboratorio", label: "Laboratório", icon: FlaskConical },
   { href: "/app/arquivo", label: "Arquivo", icon: Files },
+  { href: "/app/meu-arquivo", label: "Meu Arquivo", icon: Bookmark },
   { href: "/app/consulte", label: "Consulte as Trevas", icon: Bot },
   { href: "/app/biblioteca", label: "Biblioteca", icon: Library },
 ];
@@ -69,6 +71,7 @@ export function MemberShell({ children, user }: { children: React.ReactNode; use
           <strong>TREVAS</strong>
           <button className="icon-button" aria-label="Abrir notificações"><Bell size={20} /></button>
         </header>
+        <form className="member-search-bar" action="/app/busca"><Search size={17} aria-hidden="true" /><input name="q" placeholder="Buscar no conteúdo Trevas" aria-label="Buscar no conteúdo Trevas" /><button className="icon-button" type="submit" aria-label="Buscar"><Search size={17} /></button></form>
         {children}
       </main>
 

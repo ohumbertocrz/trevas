@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@vimeo/player": "^2.30.4",
     "firebase": "latest",
     "firebase-admin": "latest",
     "lucide-react": "latest",

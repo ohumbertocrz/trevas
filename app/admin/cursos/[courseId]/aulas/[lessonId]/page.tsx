@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Save } from "lucide-react";
-import { CONTENT_STATUSES } from "@/domain/content/entities";
+import { CONTENT_STATUSES, isVimeoEmbedUrl } from "@/domain/content/entities";
 import { contentRepository } from "@/infrastructure/repositories/firebase-content-repository";
+import { libraryRepository } from "@/infrastructure/repositories/firebase-library-repository";
 import { updateLesson } from "../../../actions";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,12 @@ export default async function LessonEditorPage({ params }: { params: Promise<{ c
   const { courseId, lessonId } = await params;
   const [course, lesson] = await Promise.all([contentRepository.getCourse(courseId), contentRepository.getLesson(lessonId)]);
   if (!course || !lesson || lesson.courseId !== courseId) notFound();
-  const modules = await contentRepository.listModules(courseId);
+  const [modules, materials, linkedMaterials] = await Promise.all([
+    contentRepository.listModules(courseId),
+    libraryRepository.listMaterials(),
+    libraryRepository.listMaterialsForLesson(lesson.id),
+  ]);
+  const linkedIds = new Set(linkedMaterials.map((material) => material.id));
 
   return (
     <div className="admin-page content-admin-page lesson-editor-page">
@@ -34,10 +40,14 @@ export default async function LessonEditorPage({ params }: { params: Promise<{ c
         <label>Slug<input name="slug" defaultValue={lesson.slug} maxLength={180} /></label>
         <label>Módulo<select name="moduleId" defaultValue={lesson.moduleId}>{modules.map((module) => <option key={module.id} value={module.id}>{module.order}. {module.title}</option>)}</select></label>
         <label className="full-field">Descrição<textarea name="description" defaultValue={lesson.description} rows={5} maxLength={8000} /></label>
-        <label>Vimeo ID ou URL<input name="vimeoId" defaultValue={lesson.vimeoId} maxLength={500} /></label>
+        <label>URL de embed do Vimeo<input name="vimeoEmbedUrl" type="url" defaultValue={lesson.vimeoEmbedUrl} maxLength={500} placeholder="https://player.vimeo.com/video/..." /></label>
         <label>Duração em minutos<input name="durationMinutes" type="number" defaultValue={lesson.durationMinutes} min={0} max={1440} /></label>
-        <label className="full-field">Thumbnail URL<input name="thumbnailUrl" type="url" defaultValue={lesson.thumbnailUrl} maxLength={1000} /></label>
+        <input type="hidden" name="thumbnailPath" value={lesson.thumbnailPath} />
+        <label className="full-field">Thumbnail (JPG, PNG ou WebP, até 2 MB)<input name="thumbnail" type="file" accept="image/jpeg,image/png,image/webp" /></label>
+        {lesson.thumbnailPath && <div className="media-preview full-field"><img src={`/api/media/lesson-thumbnail/${lesson.id}`} alt={`Thumbnail de ${lesson.title}`} /></div>}
+        {isVimeoEmbedUrl(lesson.vimeoEmbedUrl) && lesson.vimeoEmbedUrl && <div className="vimeo-preview full-field"><iframe src={lesson.vimeoEmbedUrl} title={`Prévia de ${lesson.title}`} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen /></div>}
         <label className="full-field">Tags, separadas por vírgula<input name="tags" defaultValue={lesson.tags.join(", ")} maxLength={1000} /></label>
+        <fieldset className="material-picker full-field"><legend>Materiais vinculados</legend>{materials.length === 0 ? <p className="inline-empty">Nenhum material cadastrado na Biblioteca.</p> : materials.map((material) => <label className="material-option" key={material.id}><input type="checkbox" name="materialIds" value={material.id} defaultChecked={linkedIds.has(material.id)} /><span><strong>{material.title}</strong><small>{material.type} · {material.visibility === "published" ? "Publicado" : "Rascunho"}</small></span></label>)}</fieldset>
         <label className="full-field">Transcrição<textarea name="transcript" defaultValue={lesson.transcript} rows={14} maxLength={200000} /></label>
         <label>Status<select name="status" defaultValue={lesson.status}>{CONTENT_STATUSES.map((value) => <option key={value} value={value}>{statusLabel[value]}</option>)}</select></label>
         <label>Publicação agendada<input name="scheduledAt" type="datetime-local" defaultValue={localDateTime(lesson.scheduledAt)} /></label>
