@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { LESSON_THUMBNAIL_MAX_BYTES, LESSON_THUMBNAIL_TYPES, type MediaStorage } from "@/application/ports/media-storage";
+import { TRANSCRIPT_MEDIA_TYPES } from "@/application/ports/media-storage";
 import { adminStorage } from "@/infrastructure/firebase/admin";
 
 const extensionByType: Record<(typeof LESSON_THUMBNAIL_TYPES)[number], string> = {
@@ -33,6 +34,19 @@ export class FirebaseMediaStorage implements MediaStorage {
     const file = adminStorage().bucket().file(path);
     const [metadata, download] = await Promise.all([file.getMetadata(), file.download()]);
     return { bytes: download[0], contentType: metadata[0].contentType || "application/octet-stream" };
+  }
+
+  async saveLessonTranscriptMedia(input: { actorId: string; courseId: string; lessonId: string; file: File }) {
+    if (!TRANSCRIPT_MEDIA_TYPES.includes(input.file.type as (typeof TRANSCRIPT_MEDIA_TYPES)[number])) throw new Error("Formato de áudio ou vídeo não suportado.");
+    const extension = input.file.type.split("/")[1].replace("quicktime", "mov");
+    const path = `lesson-transcripts/${input.courseId}/${input.lessonId}/${randomUUID()}.${extension}`;
+    await adminStorage().bucket().file(path).save(Buffer.from(await input.file.arrayBuffer()), { contentType: input.file.type, metadata: { cacheControl: "private, max-age=3600", metadata: { uploadedBy: input.actorId } }, resumable: false });
+    return path;
+  }
+
+  async deleteLessonTranscriptMedia(path: string) {
+    if (!path.startsWith("lesson-transcripts/")) throw new Error("Caminho de mÃ­dia invÃ¡lido.");
+    await adminStorage().bucket().file(path).delete({ ignoreNotFound: true });
   }
 }
 

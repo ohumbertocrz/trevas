@@ -1,0 +1,26 @@
+import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
+import { getAuthenticatedUser } from "@/application/access/session";
+import { hasActiveEntitlement, hasAdministrativeAccess } from "@/application/access/permissions";
+import { getGeminiServer } from "@/application/services/gemini-server";
+import { aiUsageRepository } from "@/infrastructure/repositories/firebase-ai-usage-repository";
+import { caseRepository } from "@/infrastructure/repositories/firebase-case-repository";
+import { contentRepository } from "@/infrastructure/repositories/firebase-content-repository";
+import { laboratoryRepository } from "@/infrastructure/repositories/firebase-laboratory-repository";
+import { memberContentRepository } from "@/infrastructure/repositories/firebase-member-content-repository";
+import { referenceRepository } from "@/infrastructure/repositories/firebase-reference-repository";
+
+export async function POST(request: Request) {
+  const user = await getAuthenticatedUser(); if (!user || (!hasAdministrativeAccess(user.roles) && !hasActiveEntitlement(user.entitlement))) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  const body = await request.json().catch(() => ({})); const text = String(body.text ?? "").trim(); const image = body.image && typeof body.image.data === "string" ? { data: body.image.data, mimeType: String(body.image.mimeType ?? "image/jpeg") } : null;
+  if (!text && !image) return NextResponse.json({ error: "Envie um texto ou imagem." }, { status: 400 }); if (text.length > 4000) return NextResponse.json({ error: "O texto deve ter no máximo 4.000 caracteres." }, { status: 400 }); if (image && image.data.length > 10_000_000) return NextResponse.json({ error: "A imagem é muito grande." }, { status: 400 });
+  const reservationId = randomUUID(); let reserved = false;
+  try {
+    await aiUsageRepository.reserve(user.id); reserved = true;
+    const [courses, cases, laboratories, references] = await Promise.all([memberContentRepository.listPublishedCourses(), caseRepository.listPublishedCases(), laboratoryRepository.listPublishedLaboratories(), referenceRepository.listPublishedReferences()]);
+    const lessons = courses.flatMap((course) => course.modules.flatMap((module) => module.lessons.map((lesson) => ({ lesson, course, module })))); const keywords = text.toLocaleLowerCase("pt-BR").split(/\W+/).filter((word: string) => word.length > 3).slice(0, 12); const matches = (...values: string[]) => keywords.length === 0 || keywords.some((keyword) => values.join(" ").toLocaleLowerCase("pt-BR").includes(keyword)); const selectedLessons = (await Promise.all(lessons.filter(({ lesson, course, module }) => matches(lesson.title, lesson.subtitle, course.title, module.title)).slice(0, 8).map(async ({ lesson, course, module }) => { const full = await contentRepository.getLesson(lesson.id); return { title: lesson.title, course: course.title, module: module.title, transcript: full?.transcript.slice(0, 12000) ?? "" }; }))).filter(Boolean);
+    const context = { lessons: selectedLessons, cases: cases.filter((item) => matches(item.title, item.description, ...item.tags, ...item.techniques)).slice(0, 6).map((item) => ({ title: item.title, analysis: item.analysis.slice(0, 4000) })), laboratories: laboratories.filter((item) => matches(item.title, item.description, ...item.tags)).slice(0, 4).map((item) => ({ title: item.title, analysis: item.officialAnalysis.slice(0, 2500) })), references: references.filter((item) => matches(item.title, item.author, item.description, ...item.tags)).slice(0, 6).map((item) => ({ title: item.title, author: item.author, description: item.description })) };
+    const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [{ text: `Você é o Consulte as Trevas. Analise seguindo a metodologia Trevas. Use o contexto publicado apenas quando relevante e não invente fontes. Retorne JSON válido com exatamente: Enquadramento, Escolhas linguísticas, Omissões, Recursos emocionais, Técnicas identificadas, ConteúdosRelacionados. Cada valor deve ser texto em português.\n\nCONTEXTO:\n${JSON.stringify(context)}\n\nPEDIDO DO ALUNO:\n${text}` }]; if (image) parts.push({ inlineData: image });
+    const result = await getGeminiServer().models.generateContent({ model: process.env.GEMINI_MODEL ?? "gemini-3.5-flash", contents: [{ role: "user", parts }], config: { responseMimeType: "application/json", temperature: 0.2 } }); const responseText = result.text ?? ""; if (!responseText) throw new Error("A IA não retornou uma análise."); await aiUsageRepository.complete(user.id, reservationId, { promptChars: text.length, responseChars: responseText.length, model: process.env.GEMINI_MODEL ?? "gemini-3.5-flash" }); return NextResponse.json({ analysis: JSON.parse(responseText), usage: await aiUsageRepository.get(user.id) });
+  } catch (error) { if (reserved) await aiUsageRepository.refund(user.id, reservationId); if (error instanceof Error && error.message.includes("AI_QUOTA_EXCEEDED")) return NextResponse.json({ error: "Você atingiu o limite de 5 análises nesta semana." }, { status: 429 }); return NextResponse.json({ error: error instanceof Error ? error.message : "Não foi possível concluir a análise." }, { status: 500 }); }
+}

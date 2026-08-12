@@ -34,6 +34,12 @@ service firebase.storage {
         && request.resource.contentType.matches('image/(jpeg|png|webp)');
     }
 
+    match /lesson-transcripts/{allPaths=**} {
+      allow read: if isStaff();
+      allow write: if isStaff()
+        && request.resource.contentType.matches('(audio|video)/.*');
+    }
+
     match /protected/{allPaths=**} {
       allow read: if hasTrevasAccess() || isStaff();
       allow write: if isStaff() && request.resource.size < 50 * 1024 * 1024;

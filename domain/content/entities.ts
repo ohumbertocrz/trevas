@@ -1,6 +1,8 @@
 export const CONTENT_STATUSES = ["draft", "published", "unpublished", "scheduled"] as const;
 
 export type ContentStatus = (typeof CONTENT_STATUSES)[number];
+export const TRANSCRIPT_STATUSES = ["none", "processing", "review", "approved", "rejected"] as const;
+export type TranscriptStatus = (typeof TRANSCRIPT_STATUSES)[number];
 
 export interface CourseContent {
   id: string;
@@ -41,6 +43,11 @@ export interface LessonContent {
   durationMinutes: number;
   tags: string[];
   transcript: string;
+  transcriptDraft: string;
+  transcriptStatus: TranscriptStatus;
+  transcriptMediaPath: string;
+  transcriptApprovedAt: Date | null;
+  transcriptApprovedBy: string;
   publishedAt: Date | null;
   scheduledAt: Date | null;
   updatedAt: Date | null;

@@ -44,6 +44,7 @@ const lessonFields = {
   durationMinutes: z.coerce.number().int().min(0).max(1440).optional().default(0),
   tags: z.string().trim().max(1000).optional().default(""),
   transcript: z.string().trim().max(200000).optional().default(""),
+  transcriptMediaPath: z.string().trim().max(1000).optional().default(""),
   scheduledAt: z.string().optional().default(""),
 };
 
@@ -141,6 +142,7 @@ export async function createLesson(formData: FormData) {
 export async function updateLesson(formData: FormData) {
   const actor = await contentActor();
   const input = lessonUpdateSchema.parse(Object.fromEntries(formData));
+  const previousLesson = await contentRepository.getLesson(input.lessonId);
   let thumbnailPath = input.thumbnailPath;
   const thumbnail = formData.get("thumbnail");
   if (thumbnail instanceof File && thumbnail.size > 0) {
@@ -148,7 +150,12 @@ export async function updateLesson(formData: FormData) {
     if (!LESSON_THUMBNAIL_TYPES.includes(thumbnail.type as (typeof LESSON_THUMBNAIL_TYPES)[number])) throw new Error("A thumbnail deve ser JPG, PNG ou WebP.");
     thumbnailPath = await mediaStorage.saveLessonThumbnail({ actorId: actor.id, courseId: input.courseId, lessonId: input.lessonId, file: thumbnail });
   }
-  await contentRepository.updateLesson(input.lessonId, { ...lessonInput(input), thumbnailPath }, actor.id);
+  let transcriptMediaPath = input.transcriptMediaPath || previousLesson?.transcriptMediaPath || "";
+  if (transcriptMediaPath && !transcriptMediaPath.startsWith(`lesson-transcripts/${input.courseId}/${input.lessonId}/`)) throw new Error("Mídia de transcrição inválida.");
+  await contentRepository.updateLesson(input.lessonId, { ...lessonInput(input), thumbnailPath, transcriptMediaPath }, actor.id);
+  if (previousLesson?.transcriptMediaPath && previousLesson.transcriptMediaPath !== transcriptMediaPath) {
+    await mediaStorage.deleteLessonTranscriptMedia(previousLesson.transcriptMediaPath);
+  }
   const materialIds = formData.getAll("materialIds").filter((value): value is string => typeof value === "string");
   await libraryRepository.setLessonMaterials(input.lessonId, materialIds, actor.id);
   revalidatePath(`/admin/cursos/${input.courseId}`);
