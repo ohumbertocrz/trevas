@@ -10,9 +10,11 @@ interface VimeoProgressPlayerProps {
   initialPercent: number;
   initialCompleted: boolean;
   title: string;
+  viewerName: string;
+  viewerEmail: string;
 }
 
-export function VimeoProgressPlayer({ embedUrl, lessonId, initialPositionSeconds, initialPercent, initialCompleted, title }: VimeoProgressPlayerProps) {
+export function VimeoProgressPlayer({ embedUrl, lessonId, initialPositionSeconds, initialPercent, initialCompleted, title, viewerName, viewerEmail }: VimeoProgressPlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const latest = useRef({ lastPositionSeconds: initialPositionSeconds, durationSeconds: 0, percent: initialPercent, completed: initialCompleted });
   const lastSentAt = useRef(0);
@@ -53,9 +55,10 @@ export function VimeoProgressPlayer({ embedUrl, lessonId, initialPositionSeconds
     };
   }, [initialPercent, initialPositionSeconds, lessonId]);
 
+  const maskedEmail = viewerEmail.replace(/^(.{3}).*(@.*)$/, "$1***$2");
   return (
     <section className="vimeo-player panel" aria-label="Player da aula">
-      <div className="vimeo-frame"><iframe ref={iframeRef} src={embedUrl} title={title} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen /></div>
+      <div className="vimeo-frame"><iframe ref={iframeRef} src={embedUrl} title={title} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen /><span className="social-drm-watermark" aria-hidden="true"><strong>{viewerName}</strong><small>{maskedEmail}</small></span></div>
       <div className="player-progress-label">{percent >= 95 ? "Aula concluída" : `${Math.round(percent)}% concluída`}</div>
     </section>
   );
