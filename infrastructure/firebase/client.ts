@@ -1,4 +1,5 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider, type AppCheck } from "firebase/app-check";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -17,4 +18,12 @@ export function getFirebaseApp() {
   }
 
   return getApps().length ? getApp() : initializeApp(firebaseConfig);
+}
+
+let appCheck: AppCheck | null = null;
+export function getFirebaseAppCheck() {
+  if (typeof window === "undefined" || !isFirebaseConfigured || !process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) return null;
+  if (appCheck) return appCheck;
+  appCheck = initializeAppCheck(getFirebaseApp(), { provider: new ReCaptchaEnterpriseProvider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY), isTokenAutoRefreshEnabled: true });
+  return appCheck;
 }

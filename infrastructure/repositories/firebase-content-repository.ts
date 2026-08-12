@@ -1,7 +1,7 @@
 import { FieldValue, Timestamp, type WriteBatch } from "firebase-admin/firestore";
 import type { ContentRepository, CourseInput, LessonInput, ModuleInput } from "@/application/ports/content-repository";
 import type { ContentStatus, CourseContent, CourseModuleContent, LessonContent } from "@/domain/content/entities";
-import { CONTENT_STATUSES } from "@/domain/content/entities";
+import { CONTENT_STATUSES, TRANSCRIPT_STATUSES, type TranscriptStatus } from "@/domain/content/entities";
 import { adminFirestore } from "@/infrastructure/firebase/admin";
 
 function asStatus(value: unknown): ContentStatus {
@@ -38,6 +38,11 @@ function lessonFromData(id: string, data: FirebaseFirestore.DocumentData): Lesso
     durationMinutes: Number(data.durationMinutes ?? 0),
     tags: Array.isArray(data.tags) ? data.tags.filter((tag): tag is string => typeof tag === "string") : [],
     transcript: String(data.transcript ?? ""),
+    transcriptDraft: String(data.transcriptDraft ?? ""),
+    transcriptStatus: TRANSCRIPT_STATUSES.includes(data.transcriptStatus as TranscriptStatus) ? data.transcriptStatus as TranscriptStatus : (data.transcript ? "approved" : "none"),
+    transcriptMediaPath: String(data.transcriptMediaPath ?? ""),
+    transcriptApprovedAt: data.transcriptApprovedAt instanceof Timestamp ? data.transcriptApprovedAt.toDate() : null,
+    transcriptApprovedBy: String(data.transcriptApprovedBy ?? ""),
     publishedAt: asDate(data.publishedAt),
     scheduledAt: asDate(data.scheduledAt),
     updatedAt: asDate(data.updatedAt),

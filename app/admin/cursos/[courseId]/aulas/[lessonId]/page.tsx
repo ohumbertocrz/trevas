@@ -5,6 +5,8 @@ import { CONTENT_STATUSES, isVimeoEmbedUrl } from "@/domain/content/entities";
 import { contentRepository } from "@/infrastructure/repositories/firebase-content-repository";
 import { libraryRepository } from "@/infrastructure/repositories/firebase-library-repository";
 import { updateLesson } from "../../../actions";
+import { TranscriptControls } from "@/components/admin/transcript-controls";
+import { TranscriptMediaUpload } from "@/components/admin/transcript-media-upload";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +51,8 @@ export default async function LessonEditorPage({ params }: { params: Promise<{ c
         <label className="full-field">Tags, separadas por vírgula<input name="tags" defaultValue={lesson.tags.join(", ")} maxLength={1000} /></label>
         <fieldset className="material-picker full-field"><legend>Materiais vinculados</legend>{materials.length === 0 ? <p className="inline-empty">Nenhum material cadastrado na Biblioteca.</p> : materials.map((material) => <label className="material-option" key={material.id}><input type="checkbox" name="materialIds" value={material.id} defaultChecked={linkedIds.has(material.id)} /><span><strong>{material.title}</strong><small>{material.type} · {material.visibility === "published" ? "Publicado" : "Rascunho"}</small></span></label>)}</fieldset>
         <label className="full-field">Transcrição<textarea name="transcript" defaultValue={lesson.transcript} rows={14} maxLength={200000} /></label>
+        <div className="full-field"><span className="field-label">Mídia para transcrição</span><TranscriptMediaUpload courseId={course.id} lessonId={lesson.id} initialPath={lesson.transcriptMediaPath} /></div>
+        <TranscriptControls lessonId={lesson.id} status={lesson.transcriptStatus} hasMedia={Boolean(lesson.transcriptMediaPath)} draft={lesson.transcriptDraft} />
         <label>Status<select name="status" defaultValue={lesson.status}>{CONTENT_STATUSES.map((value) => <option key={value} value={value}>{statusLabel[value]}</option>)}</select></label>
         <label>Publicação agendada<input name="scheduledAt" type="datetime-local" defaultValue={localDateTime(lesson.scheduledAt)} /></label>
         <div className="form-actions full-field"><button className="primary-button" type="submit"><Save size={16} />Salvar aula</button></div>

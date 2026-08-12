@@ -1,4 +1,4 @@
-import type { ContentStatus, CourseContent, CourseModuleContent, LessonContent } from "@/domain/content/entities";
+import type { ContentStatus, CourseContent, CourseModuleContent, LessonContent, TranscriptStatus } from "@/domain/content/entities";
 
 export interface CourseInput {
   title: string;
@@ -27,6 +27,11 @@ export interface LessonInput {
   durationMinutes: number;
   tags: string[];
   transcript: string;
+  transcriptDraft?: string;
+  transcriptStatus?: TranscriptStatus;
+  transcriptMediaPath?: string;
+  transcriptApprovedAt?: Date | null;
+  transcriptApprovedBy?: string;
   scheduledAt: Date | null;
 }
 
