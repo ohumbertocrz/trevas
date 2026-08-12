@@ -1,6 +1,7 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import type { AdminAccessRepository } from "@/application/ports/admin-access-repository";
 import type { EntitlementOrigin, UserProfile, UserRole, UserStatus } from "@/domain/access/entities";
+import type { CommunicationAudience } from "@/domain/communication/entities";
 import { adminFirestore } from "@/infrastructure/firebase/admin";
 
 function toProfile(id: string, data: FirebaseFirestore.DocumentData): UserProfile {
@@ -17,6 +18,22 @@ export class FirebaseAdminAccessRepository implements AdminAccessRepository {
   async listUsers(limit = 50) {
     const snapshot = await adminFirestore().collection("users").orderBy("email").limit(limit).get();
     return snapshot.docs.map((document) => toProfile(document.id, document.data()));
+  }
+
+  async listActiveUsers() {
+    const snapshot = await adminFirestore().collection("users").where("status", "==", "active").get();
+    return snapshot.docs.map((document) => toProfile(document.id, document.data())).filter((user) => user.email);
+  }
+
+  async listCommunicationRecipients(audience: CommunicationAudience) {
+    const users = (await this.listActiveUsers()).filter((user) => audience === "all_active" || !user.roles.includes("admin"));
+    if (audience === "active_students" || audience === "all_active") return users;
+    const progress = await adminFirestore().collection("lessonProgress").get();
+    const started = new Set(progress.docs.map((document) => String(document.data().userId ?? "")));
+    if (audience === "not_started") return users.filter((user) => !started.has(user.id));
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const recent = new Set(progress.docs.filter((document) => { const value = document.data().updatedAt; return value?.toDate && value.toDate().getTime() >= cutoff; }).map((document) => String(document.data().userId ?? "")));
+    return users.filter((user) => !recent.has(user.id));
   }
 
   async grantEntitlement(input: { actorId: string; userId: string; productId: string; origin: EntitlementOrigin; expiresAt: Date | null; reason: string }) {
