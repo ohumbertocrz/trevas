@@ -24,6 +24,7 @@ const navigation = [
   { href: "/app/meu-arquivo", label: "Meu Arquivo", icon: Bookmark },
   { href: "/app/consulte", label: "Consulte as Trevas", icon: Bot },
   { href: "/app/biblioteca", label: "Biblioteca", icon: Library },
+  { href: "/app/avisos", label: "Avisos", icon: Bell },
 ];
 
 const mobileNavigation = [
@@ -38,7 +39,7 @@ function isActive(pathname: string, href: string, exact?: boolean) {
   return exact ? pathname === href : pathname.startsWith(href);
 }
 
-export function MemberShell({ children, user }: { children: React.ReactNode; user: { displayName: string; email: string } }) {
+export function MemberShell({ children, user, unreadNotices }: { children: React.ReactNode; user: { displayName: string; email: string }; unreadNotices: number }) {
   const pathname = usePathname();
 
   return (
@@ -59,7 +60,7 @@ export function MemberShell({ children, user }: { children: React.ReactNode; use
         </nav>
         <div className="sidebar-profile">
           <Link className="profile-link" href="/app/perfil">
-            <span className="avatar"><UserRound size={19} /></span>
+            <span className="avatar-wrap"><span className="avatar"><UserRound size={19} /></span>{unreadNotices > 0 && <span className="notice-badge" aria-label={`${unreadNotices} avisos não lidos`}>{unreadNotices > 99 ? "99+" : unreadNotices}</span>}</span>
             <span><strong>{user.displayName}</strong><small>{user.email}</small></span>
           </Link>
           <SignOutButton />

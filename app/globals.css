@@ -37,6 +37,8 @@ button { color: inherit; }
 .profile-link { min-width: 0; display: flex; align-items: center; gap: 12px; flex: 1; }
 .profile-link > span:last-child { min-width: 0; }
 .avatar { width: 38px; height: 38px; border: 1px solid var(--gold); border-radius: 50%; display: grid; place-items: center; color: var(--gold-light); }
+.avatar-wrap { position: relative; display: inline-grid; flex: 0 0 auto; }
+.notice-badge { position: absolute; top: -10px; right: -9px; min-width: 19px; height: 19px; padding: 0 5px; display: grid; place-items: center; border-radius: 999px; background: var(--red, #b52a20); color: #fff; border: 2px solid var(--panel, #0d0f0e); font-size: 10px; font-weight: 700; line-height: 1; }
 .sidebar-profile strong { display: block; font-family: var(--font-display); font-weight: 500; font-size: 17px; }
 .sidebar-profile small { display: block; max-width: 118px; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .profile-action { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border: 0; background: transparent; color: var(--muted); cursor: pointer; }

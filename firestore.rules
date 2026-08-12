@@ -121,6 +121,22 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /communicationDeliveries/{deliveryId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'openedAt']);
+      allow write: if false;
+    }
+
+    match /communications/{communicationId} {
+      allow read: if isStaff();
+      allow write: if false;
+    }
+
+    match /emailEvents/{eventId} {
+      allow read, write: if false;
+    }
+
     match /savedItems/{itemId} {
       allow read: if signedIn() && resource.data.userId == request.auth.uid;
       allow create: if signedIn() && request.auth.uid == request.resource.data.userId;
