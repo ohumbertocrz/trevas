@@ -262,6 +262,11 @@ button { color: inherit; }
 .social-drm-watermark small { font-size: .62rem; letter-spacing: .04em; }
 .content-identification { display: block; margin-top: 18px; color: var(--muted); font-size: .72rem; letter-spacing: .03em; }
 .lesson-identification { margin: 18px 0 0; }
+.profile-security { margin-top: 28px; border-color: rgba(181,42,32,.55); }
+.delete-account-form { display: flex; gap: 14px; align-items: end; flex-wrap: wrap; }
+.delete-account-form label { display: grid; gap: 7px; min-width: min(100%, 280px); color: var(--muted); font-size: .82rem; }
+.delete-account-form input { min-height: 42px; border: 1px solid var(--line); background: var(--surface); color: var(--text); padding: 0 12px; }
+.danger-button { min-height: 42px; border: 1px solid #b52a20; background: #5d1d19; color: #fff; padding: 0 16px; cursor: pointer; }
 @keyframes drm-drift { from { transform: translate(0, 0); } to { transform: translate(28vw, 14vh); } }
 .transcript-media-upload small { display: flex; align-items: center; gap: 5px; color: var(--muted); }
 .transcript-media-upload small svg { color: var(--gold); }
