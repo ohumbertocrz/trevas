@@ -6,7 +6,7 @@ import { z } from "zod";
 import { assertCanManageContent } from "@/application/content/permissions";
 import { LESSON_THUMBNAIL_MAX_BYTES, LESSON_THUMBNAIL_TYPES } from "@/application/ports/media-storage";
 import { requireAdministrativeUser } from "@/application/access/session";
-import { CONTENT_STATUSES, isVimeoEmbedUrl, slugifyContent } from "@/domain/content/entities";
+import { CONTENT_STATUSES, isVimeoEmbedUrl, normalizeVimeoEmbed, slugifyContent } from "@/domain/content/entities";
 import { contentRepository } from "@/infrastructure/repositories/firebase-content-repository";
 import { mediaStorage } from "@/infrastructure/storage/firebase-media-storage";
 import { libraryRepository } from "@/infrastructure/repositories/firebase-library-repository";
@@ -40,7 +40,7 @@ const lessonFields = {
   description: z.string().trim().max(8000).optional().default(""),
   status: status.optional().default("draft"),
   thumbnailPath: z.string().trim().max(1000).optional().default(""),
-  vimeoEmbedUrl: z.string().trim().max(500).refine(isVimeoEmbedUrl, "Use uma URL de embed do player.vimeo.com.").optional().default(""),
+  vimeoEmbedUrl: z.string().trim().max(4000).transform(normalizeVimeoEmbed).refine(isVimeoEmbedUrl, "Cole o código embed do Vimeo ou uma URL player.vimeo.com/video válida.").optional().default(""),
   durationMinutes: z.coerce.number().int().min(0).max(1440).optional().default(0),
   tags: z.string().trim().max(1000).optional().default(""),
   transcript: z.string().trim().max(200000).optional().default(""),

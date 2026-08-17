@@ -53,7 +53,14 @@ export interface LessonContent {
   updatedAt: Date | null;
 }
 
+export function normalizeVimeoEmbed(value: string) {
+  const trimmed = value.trim();
+  const source = trimmed.match(/<iframe[^>]+src=["']([^"']+)["']/i)?.[1] ?? trimmed;
+  return source.replace(/&amp;/g, "&");
+}
+
 export function isVimeoEmbedUrl(value: string) {
+  value = normalizeVimeoEmbed(value);
   if (!value) return true;
   try {
     const url = new URL(value);
