@@ -41,8 +41,8 @@ export default async function LessonEditorPage({ params }: { params: Promise<{ c
         <label>Subtítulo<input name="subtitle" defaultValue={lesson.subtitle} maxLength={200} /></label>
         <label>Slug<input name="slug" defaultValue={lesson.slug} maxLength={180} /></label>
         <label>Módulo<select name="moduleId" defaultValue={lesson.moduleId}>{modules.map((module) => <option key={module.id} value={module.id}>{module.order}. {module.title}</option>)}</select></label>
-        <label className="full-field">Descrição<textarea name="description" defaultValue={lesson.description} rows={5} maxLength={8000} /></label>
-        <label>URL de embed do Vimeo<input name="vimeoEmbedUrl" type="url" defaultValue={lesson.vimeoEmbedUrl} maxLength={500} placeholder="https://player.vimeo.com/video/..." /></label>
+        <label className="full-field">Conteúdo da aula<textarea name="description" defaultValue={lesson.description} rows={8} maxLength={8000} placeholder="Escreva aqui o conteúdo que aparecerá na página da aula." /></label>
+        <label>Embed do Vimeo<input name="vimeoEmbedUrl" type="text" defaultValue={lesson.vimeoEmbedUrl} maxLength={4000} placeholder="Cole o iframe ou a URL player.vimeo.com/video/..." /></label>
         <label>Duração em minutos<input name="durationMinutes" type="number" defaultValue={lesson.durationMinutes} min={0} max={1440} /></label>
         <input type="hidden" name="thumbnailPath" value={lesson.thumbnailPath} />
         <label className="full-field">Thumbnail (JPG, PNG ou WebP, até 2 MB)<input name="thumbnail" type="file" accept="image/jpeg,image/png,image/webp" /></label>

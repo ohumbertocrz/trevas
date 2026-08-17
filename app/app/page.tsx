@@ -2,14 +2,14 @@ import { ArrowRight, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { ActivityIcon } from "@/components/member/activity-icon";
 import { ResizableColumns } from "@/components/ui/resizable-columns";
-import { learningRepository } from "@/infrastructure/repositories/mock-learning-repository";
+import { learningRepository } from "@/infrastructure/repositories/firebase-learning-repository";
 import { requireMember } from "@/application/access/session";
 
 export default async function DashboardPage() {
-  const [user, dashboard, lesson] = await Promise.all([
-    requireMember(),
-    learningRepository.getDashboard("preview-user"),
-    learningRepository.getContinueLesson("preview-user"),
+  const user = await requireMember();
+  const [dashboard, lesson] = await Promise.all([
+    learningRepository.getDashboard(user.id),
+    learningRepository.getContinueLesson(user.id),
   ]);
 
   return (
@@ -55,6 +55,7 @@ export default async function DashboardPage() {
         <section className="panel archive-panel" aria-labelledby="recent-title">
           <div className="panel-heading"><h2 id="recent-title">Adicionados recentemente ao Arquivo</h2><Link className="text-link" href="/app/arquivo">Ver tudo</Link></div>
           <div className="archive-grid">
+            {dashboard.archiveItems.length === 0 && <p className="inline-empty">Você ainda não adicionou conteúdos ao Arquivo.</p>}
             {dashboard.archiveItems.map((item) => (
               <article className="archive-card" key={item.id}>
                 {/* Existing Trevas imagery is reused until editorial media is connected. */}
@@ -68,6 +69,7 @@ export default async function DashboardPage() {
         <section className="panel activity-panel" aria-labelledby="activity-title">
           <div className="panel-heading"><h2 id="activity-title">Atividade recente</h2><button className="text-link">Ver todas</button></div>
           <div className="activity-list">
+            {dashboard.activities.length === 0 && <p className="inline-empty">Sua atividade aparecerá aqui quando você começar a estudar.</p>}
             {dashboard.activities.map((activity) => (
               <div className="activity-item" key={activity.id}>
                 <span className="activity-icon"><ActivityIcon kind={activity.kind} /></span>
