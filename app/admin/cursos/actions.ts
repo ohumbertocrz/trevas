@@ -144,6 +144,7 @@ export async function updateLesson(formData: FormData) {
   const input = lessonUpdateSchema.parse(Object.fromEntries(formData));
   const previousLesson = await contentRepository.getLesson(input.lessonId);
   let thumbnailPath = input.thumbnailPath;
+  if (formData.get("removeThumbnail") === "on") thumbnailPath = "";
   const thumbnail = formData.get("thumbnail");
   if (thumbnail instanceof File && thumbnail.size > 0) {
     if (thumbnail.size > LESSON_THUMBNAIL_MAX_BYTES) throw new Error("A thumbnail deve ter no máximo 2 MB.");
@@ -153,6 +154,7 @@ export async function updateLesson(formData: FormData) {
   let transcriptMediaPath = input.transcriptMediaPath || previousLesson?.transcriptMediaPath || "";
   if (transcriptMediaPath && !transcriptMediaPath.startsWith(`lesson-transcripts/${input.courseId}/${input.lessonId}/`)) throw new Error("Mídia de transcrição inválida.");
   await contentRepository.updateLesson(input.lessonId, { ...lessonInput(input), thumbnailPath, transcriptMediaPath }, actor.id);
+  if (previousLesson?.thumbnailPath && previousLesson.thumbnailPath !== thumbnailPath) await mediaStorage.deleteLessonThumbnail(previousLesson.thumbnailPath);
   if (previousLesson?.transcriptMediaPath && previousLesson.transcriptMediaPath !== transcriptMediaPath) {
     await mediaStorage.deleteLessonTranscriptMedia(previousLesson.transcriptMediaPath);
   }
@@ -160,7 +162,25 @@ export async function updateLesson(formData: FormData) {
   await libraryRepository.setLessonMaterials(input.lessonId, materialIds, actor.id);
   revalidatePath(`/admin/cursos/${input.courseId}`);
   revalidatePath(`/admin/cursos/${input.courseId}/aulas/${input.lessonId}`);
+  redirect(`/admin/cursos/${input.courseId}/aulas/${input.lessonId}?saved=1`);
 }
+
+async function changeLessonStatus(formData: FormData, nextStatus: "published" | "draft") {
+  const actor = await contentActor();
+  const input = z.object({ courseId: identifier, lessonId: identifier }).parse(Object.fromEntries(formData));
+  const lesson = await contentRepository.getLesson(input.lessonId);
+  if (!lesson) throw new Error("Aula não encontrada.");
+  const course = await contentRepository.getCourse(input.courseId);
+  const module = course ? (await contentRepository.listModules(input.courseId)).find((item) => item.id === lesson.moduleId) : null;
+  if (nextStatus === "published" && (course?.status !== "published" || module?.status !== "published")) throw new Error("Publique o curso e o módulo antes de publicar esta aula.");
+  await contentRepository.updateLesson(input.lessonId, { ...lesson, status: nextStatus, scheduledAt: null }, actor.id);
+  revalidatePath(`/admin/cursos/${input.courseId}`);
+  revalidatePath(`/admin/cursos/${input.courseId}/aulas/${input.lessonId}`);
+  redirect(`/admin/cursos/${input.courseId}/aulas/${input.lessonId}?${nextStatus === "published" ? "published=1" : "draft=1"}`);
+}
+
+export async function publishLesson(formData: FormData) { await changeLessonStatus(formData, "published"); }
+export async function revertLessonToDraft(formData: FormData) { await changeLessonStatus(formData, "draft"); }
 
 export async function moveLesson(formData: FormData) {
   const actor = await contentActor();
