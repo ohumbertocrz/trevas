@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Check, RotateCcw, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, RotateCcw, Save, X } from "lucide-react";
 import { CONTENT_STATUSES, isVimeoEmbedUrl } from "@/domain/content/entities";
 import { contentRepository } from "@/infrastructure/repositories/firebase-content-repository";
 import { libraryRepository } from "@/infrastructure/repositories/firebase-library-repository";
@@ -51,8 +51,7 @@ export default async function LessonEditorPage({ params, searchParams }: { param
         <label>Duração em minutos<input name="durationMinutes" type="number" defaultValue={lesson.durationMinutes} min={0} max={1440} /></label>
         <input type="hidden" name="thumbnailPath" value={lesson.thumbnailPath} />
         <label className="full-field">Thumbnail (JPG, PNG ou WebP, até 2 MB)<input name="thumbnail" type="file" accept="image/jpeg,image/png,image/webp" /></label>
-        {lesson.thumbnailPath && <div className="media-preview full-field"><img src={`/api/media/lesson-thumbnail/${lesson.id}`} alt={`Thumbnail de ${lesson.title}`} /></div>}
-        {lesson.thumbnailPath && <label className="thumbnail-remove"><input type="checkbox" name="removeThumbnail" /> <Trash2 size={15} />Remover thumbnail atual</label>}
+         {lesson.thumbnailPath && <div className="media-preview thumbnail-preview full-field"><img src={`/api/media/lesson-thumbnail/${lesson.id}`} alt={`Thumbnail de ${lesson.title}`} /><label className="thumbnail-remove" title="Remover thumbnail"><input type="checkbox" name="removeThumbnail" aria-label="Remover thumbnail" /><X size={15} /></label></div>}
         {isVimeoEmbedUrl(lesson.vimeoEmbedUrl) && lesson.vimeoEmbedUrl && <div className="vimeo-preview full-field"><iframe src={lesson.vimeoEmbedUrl} title={`Prévia de ${lesson.title}`} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen /></div>}
         <label className="full-field">Tags, separadas por vírgula<input name="tags" defaultValue={lesson.tags.join(", ")} maxLength={1000} /></label>
         <fieldset className="material-picker full-field"><legend>Materiais vinculados</legend>{materials.length === 0 ? <p className="inline-empty">Nenhum material cadastrado na Biblioteca.</p> : materials.map((material) => <label className="material-option" key={material.id}><input type="checkbox" name="materialIds" value={material.id} defaultChecked={linkedIds.has(material.id)} /><span><strong>{material.title}</strong><small>{material.type} · {material.visibility === "published" ? "Publicado" : "Rascunho"}</small></span></label>)}</fieldset>

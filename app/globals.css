@@ -269,7 +269,11 @@ button { color: inherit; }
 .danger-button { min-height: 42px; border: 1px solid #b52a20; background: #5d1d19; color: #fff; padding: 0 16px; cursor: pointer; }
 .app-toast { position: fixed; top: 22px; right: 24px; z-index: 20; display: flex; align-items: center; gap: 9px; min-width: 240px; padding: 12px 14px; background: #18261e; border: 1px solid #6da27b; color: #e8f5ea; box-shadow: 0 12px 30px rgba(0,0,0,.28); }
 .lesson-status-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
-.thumbnail-remove { grid-column: 1 / -1; display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: .82rem; }
+  .thumbnail-remove { grid-column: 1 / -1; display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: .82rem; }
+  .thumbnail-preview { position: relative; }
+  .cms-form .thumbnail-preview .thumbnail-remove { position: absolute; top: 8px; right: 8px; z-index: 1; display: grid; place-items: center; width: 28px; height: 28px; min-height: 0; padding: 0; border: 1px solid rgba(255,255,255,.3); border-radius: 50%; background: rgba(12,13,12,.82); color: var(--cream); cursor: pointer; }
+  .cms-form .thumbnail-preview .thumbnail-remove:hover { background: #8e241d; border-color: #d46d63; }
+  .cms-form .thumbnail-preview .thumbnail-remove input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 @keyframes drm-drift { from { transform: translate(0, 0); } to { transform: translate(28vw, 14vh); } }
 .transcript-media-upload small { display: flex; align-items: center; gap: 5px; color: var(--muted); }
 .transcript-media-upload small svg { color: var(--gold); }
