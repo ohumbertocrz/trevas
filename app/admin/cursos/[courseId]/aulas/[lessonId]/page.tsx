@@ -8,6 +8,8 @@ import { publishLesson, revertLessonToDraft, updateLesson } from "../../../actio
 import { Toast } from "@/components/ui/toast";
 import { TranscriptControls } from "@/components/admin/transcript-controls";
 import { TranscriptMediaUpload } from "@/components/admin/transcript-media-upload";
+import { ContentAttachmentsField } from "@/components/admin/content-attachments-field";
+import { contentAttachmentRepository } from "@/infrastructure/repositories/firebase-content-attachment-repository";
 
 export const dynamic = "force-dynamic";
 
@@ -23,10 +25,11 @@ export default async function LessonEditorPage({ params, searchParams }: { param
   const { courseId, lessonId } = await params;
   const [course, lesson] = await Promise.all([contentRepository.getCourse(courseId), contentRepository.getLesson(lessonId)]);
   if (!course || !lesson || lesson.courseId !== courseId) notFound();
-  const [modules, materials, linkedMaterials] = await Promise.all([
+  const [modules, materials, linkedMaterials, attachments] = await Promise.all([
     contentRepository.listModules(courseId),
     libraryRepository.listMaterials(),
     libraryRepository.listMaterialsForLesson(lesson.id),
+    contentAttachmentRepository.list("lesson", lesson.id),
   ]);
   const linkedIds = new Set(linkedMaterials.map((material) => material.id));
   const feedback = await searchParams;
@@ -39,7 +42,7 @@ export default async function LessonEditorPage({ params, searchParams }: { param
       {(course.status !== "published" || currentModule?.status !== "published") && <div className="form-warning">Para o aluno ver esta aula, publique primeiro o curso e o módulo.</div>}
       <header className="page-heading"><div><span className="kicker">Editor de aula</span><h1>{lesson.title}</h1><p>Conteúdo e mídia ficam privados até a publicação.</p></div><div className="lesson-status-actions"><span className={`status large-status ${lesson.status === "published" ? "" : "warning"}`}>{statusLabel[lesson.status]}</span>{lesson.status === "published" ? <form action={revertLessonToDraft}><input type="hidden" name="courseId" value={course.id} /><input type="hidden" name="lessonId" value={lesson.id} /><button className="ghost-button" type="submit"><RotateCcw size={16} />Reverter para rascunho</button></form> : <form action={publishLesson}><input type="hidden" name="courseId" value={course.id} /><input type="hidden" name="lessonId" value={lesson.id} /><button className="primary-button" type="submit"><Check size={16} />Publicar aula</button></form>}</div></header>
 
-      <form className="panel cms-form lesson-form form-grid" action={updateLesson}>
+      <form className="panel cms-form lesson-form form-grid" action={updateLesson} encType="multipart/form-data">
         <input type="hidden" name="lessonId" value={lesson.id} />
         <input type="hidden" name="courseId" value={course.id} />
         <label>Título<input name="title" defaultValue={lesson.title} required minLength={3} maxLength={160} /></label>
@@ -58,6 +61,7 @@ export default async function LessonEditorPage({ params, searchParams }: { param
         <label className="full-field">Transcrição<textarea name="transcript" defaultValue={lesson.transcript} rows={14} maxLength={200000} /></label>
         <div className="full-field"><span className="field-label">Mídia para transcrição</span><TranscriptMediaUpload courseId={course.id} lessonId={lesson.id} initialPath={lesson.transcriptMediaPath} /></div>
         <TranscriptControls lessonId={lesson.id} status={lesson.transcriptStatus} hasMedia={Boolean(lesson.transcriptMediaPath)} draft={lesson.transcriptDraft} />
+        <ContentAttachmentsField attachments={attachments} />
         <input type="hidden" name="status" value={lesson.status === "published" ? "published" : "draft"} />
         <label>Publicação agendada<input name="scheduledAt" type="datetime-local" defaultValue={localDateTime(lesson.scheduledAt)} /></label>
         <div className="form-actions full-field"><button className="primary-button" type="submit"><Save size={16} />{lesson.status === "published" ? "Salvar alterações" : "Salvar rascunho"}</button></div>

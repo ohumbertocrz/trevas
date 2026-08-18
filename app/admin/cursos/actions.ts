@@ -10,6 +10,7 @@ import { CONTENT_STATUSES, isVimeoEmbedUrl, normalizeVimeoEmbed, slugifyContent 
 import { contentRepository } from "@/infrastructure/repositories/firebase-content-repository";
 import { mediaStorage } from "@/infrastructure/storage/firebase-media-storage";
 import { libraryRepository } from "@/infrastructure/repositories/firebase-library-repository";
+import { saveContentAttachments } from "@/application/services/content-attachments";
 
 const identifier = z.string().min(1).max(128);
 const status = z.enum(CONTENT_STATUSES);
@@ -106,10 +107,25 @@ export async function updateCourse(formData: FormData) {
   revalidatePath("/admin/cursos");
 }
 
+async function changeCourseStatus(formData: FormData, nextStatus: "published" | "draft") {
+  const actor = await contentActor();
+  const input = z.object({ courseId: identifier }).parse(Object.fromEntries(formData));
+  const course = await contentRepository.getCourse(input.courseId);
+  if (!course) throw new Error("Curso não encontrado.");
+  await contentRepository.updateCourse(input.courseId, { title: course.title, slug: course.slug, description: course.description, status: nextStatus }, actor.id);
+  revalidatePath(`/admin/cursos/${input.courseId}`);
+  revalidatePath("/admin/cursos");
+  redirect(`/admin/cursos/${input.courseId}?${nextStatus === "published" ? "published=1" : "draft=1"}`);
+}
+
+export async function publishCourse(formData: FormData) { await changeCourseStatus(formData, "published"); }
+export async function revertCourseToDraft(formData: FormData) { await changeCourseStatus(formData, "draft"); }
+
 export async function createModule(formData: FormData) {
   const actor = await contentActor();
   const input = moduleSchema.parse(Object.fromEntries(formData));
-  await contentRepository.createModule({ ...input, status: "draft" }, actor.id);
+  const moduleId = await contentRepository.createModule({ ...input, status: "draft" }, actor.id);
+  await saveContentAttachments(formData, "module", moduleId, actor.id);
   revalidatePath(`/admin/cursos/${input.courseId}`);
 }
 
@@ -122,6 +138,7 @@ export async function updateModule(formData: FormData) {
     description: input.description,
     status: input.status,
   }, actor.id);
+  await saveContentAttachments(formData, "module", input.moduleId, actor.id);
   revalidatePath(`/admin/cursos/${input.courseId}`);
 }
 
@@ -136,6 +153,7 @@ export async function createLesson(formData: FormData) {
   const actor = await contentActor();
   const input = lessonSchema.parse(Object.fromEntries(formData));
   const lessonId = await contentRepository.createLesson(lessonInput({ ...input, status: "draft" }), actor.id);
+  await saveContentAttachments(formData, "lesson", lessonId, actor.id);
   redirect(`/admin/cursos/${input.courseId}/aulas/${lessonId}`);
 }
 
@@ -154,6 +172,7 @@ export async function updateLesson(formData: FormData) {
   let transcriptMediaPath = input.transcriptMediaPath || previousLesson?.transcriptMediaPath || "";
   if (transcriptMediaPath && !transcriptMediaPath.startsWith(`lesson-transcripts/${input.courseId}/${input.lessonId}/`)) throw new Error("Mídia de transcrição inválida.");
   await contentRepository.updateLesson(input.lessonId, { ...lessonInput(input), thumbnailPath, transcriptMediaPath }, actor.id);
+  await saveContentAttachments(formData, "lesson", input.lessonId, actor.id);
   if (previousLesson?.thumbnailPath && previousLesson.thumbnailPath !== thumbnailPath) await mediaStorage.deleteLessonThumbnail(previousLesson.thumbnailPath);
   if (previousLesson?.transcriptMediaPath && previousLesson.transcriptMediaPath !== transcriptMediaPath) {
     await mediaStorage.deleteLessonTranscriptMedia(previousLesson.transcriptMediaPath);

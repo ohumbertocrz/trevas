@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { LESSON_THUMBNAIL_MAX_BYTES, LESSON_THUMBNAIL_TYPES, type MediaStorage } from "@/application/ports/media-storage";
+import { CONTENT_ATTACHMENT_MAX_BYTES, LESSON_THUMBNAIL_MAX_BYTES, LESSON_THUMBNAIL_TYPES, type MediaStorage } from "@/application/ports/media-storage";
 import { TRANSCRIPT_MEDIA_TYPES } from "@/application/ports/media-storage";
 import { adminStorage } from "@/infrastructure/firebase/admin";
 
@@ -51,6 +51,21 @@ export class FirebaseMediaStorage implements MediaStorage {
 
   async deleteLessonTranscriptMedia(path: string) {
     if (!path.startsWith("lesson-transcripts/")) throw new Error("Caminho de mÃ­dia invÃ¡lido.");
+    await adminStorage().bucket().file(path).delete({ ignoreNotFound: true });
+  }
+
+  async saveContentAttachment(input: { actorId: string; ownerType: string; ownerId: string; file: File }) {
+    if (input.file.size > CONTENT_ATTACHMENT_MAX_BYTES) throw new Error("Cada arquivo deve ter no mÃ¡ximo 50 MB.");
+    if (!input.file.size) throw new Error("O arquivo estÃ¡ vazio.");
+    if (!/^[a-z]+$/.test(input.ownerType) || !/^[a-zA-Z0-9_-]+$/.test(input.ownerId)) throw new Error("Destino de arquivo invÃ¡lido.");
+    const safeName = input.file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9._-]+/g, "-").slice(-120) || "arquivo";
+    const path = `protected/content-attachments/${input.ownerType}/${input.ownerId}/${randomUUID()}-${safeName}`;
+    await adminStorage().bucket().file(path).save(Buffer.from(await input.file.arrayBuffer()), { contentType: input.file.type || "application/octet-stream", metadata: { cacheControl: "private, max-age=3600", metadata: { uploadedBy: input.actorId } }, resumable: false });
+    return path;
+  }
+
+  async deleteContentAttachment(path: string) {
+    if (!path.startsWith("protected/content-attachments/")) throw new Error("Caminho de anexo invÃ¡lido.");
     await adminStorage().bucket().file(path).delete({ ignoreNotFound: true });
   }
 }

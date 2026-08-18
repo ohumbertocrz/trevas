@@ -1,26 +1,31 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowDown, ArrowLeft, ArrowUp, BookOpen, CirclePlus, Pencil, Settings2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, BookOpen, Check, CirclePlus, Pencil, RotateCcw, Settings2 } from "lucide-react";
 import { CONTENT_STATUSES } from "@/domain/content/entities";
 import { contentRepository } from "@/infrastructure/repositories/firebase-content-repository";
-import { createLesson, createModule, moveLesson, moveModule, updateCourse, updateModule } from "../actions";
+import { createLesson, createModule, moveLesson, moveModule, publishCourse, revertCourseToDraft, updateCourse, updateModule } from "../actions";
+import { ContentAttachmentsField } from "@/components/admin/content-attachments-field";
+import { contentAttachmentRepository } from "@/infrastructure/repositories/firebase-content-attachment-repository";
 
 export const dynamic = "force-dynamic";
 
 const statusLabel = { draft: "Rascunho", published: "Publicado", unpublished: "Despublicado", scheduled: "Agendado" } as const;
 
-export default async function CourseEditorPage({ params }: { params: Promise<{ courseId: string }> }) {
+export default async function CourseEditorPage({ params, searchParams }: { params: Promise<{ courseId: string }>; searchParams: Promise<{ published?: string; draft?: string }> }) {
   const { courseId } = await params;
   const [course, modules] = await Promise.all([contentRepository.getCourse(courseId), contentRepository.listModules(courseId)]);
   if (!course) notFound();
+  const feedback = await searchParams;
   const lessonsByModule = new Map((await Promise.all(modules.map(async (module) => [module.id, await contentRepository.listLessons(module.id)] as const))));
+  const attachmentsByModule = new Map((await Promise.all(modules.map(async (module) => [module.id, await contentAttachmentRepository.list("module", module.id)] as const))));
 
   return (
     <div className="admin-page content-admin-page">
       <Link href="/admin/cursos" className="back-link"><ArrowLeft size={16} />Cursos</Link>
+      {feedback.published === "1" && <div className="app-toast" role="status">Curso publicado.</div>}{feedback.draft === "1" && <div className="app-toast" role="status">Curso revertido para rascunho.</div>}
       <header className="page-heading">
         <div><span className="kicker">Editor de curso</span><h1>{course.title}</h1><p>{course.moduleCount} módulos · {course.lessonCount} aulas</p></div>
-        <span className={`status large-status ${course.status === "published" ? "" : "warning"}`}>{statusLabel[course.status]}</span>
+        <div className="lesson-status-actions"><span className={`status large-status ${course.status === "published" ? "" : "warning"}`}>{statusLabel[course.status]}</span>{course.status === "published" ? <form action={revertCourseToDraft}><input type="hidden" name="courseId" value={course.id} /><button className="ghost-button" type="submit"><RotateCcw size={16} />Reverter para rascunho</button></form> : <form action={publishCourse}><input type="hidden" name="courseId" value={course.id} /><button className="primary-button" type="submit"><Check size={16} />Publicar curso</button></form>}</div>
       </header>
 
       <details className="panel cms-settings">
@@ -66,7 +71,7 @@ export default async function CourseEditorPage({ params }: { params: Promise<{ c
               </div>
 
               <footer className="module-admin-footer">
-                <details className="inline-editor"><summary className="text-link"><Pencil size={14} />Editar módulo</summary><form className="cms-form compact-form" action={updateModule}><input type="hidden" name="courseId" value={course.id} /><input type="hidden" name="moduleId" value={module.id} /><label>Título<input name="title" defaultValue={module.title} required /></label><label>Descrição<textarea name="description" defaultValue={module.description} rows={3} /></label><label>Status<select name="status" defaultValue={module.status}>{CONTENT_STATUSES.map((value) => <option key={value} value={value}>{statusLabel[value]}</option>)}</select></label><button className="ghost-button" type="submit">Salvar módulo</button></form></details>
+                <details className="inline-editor"><summary className="text-link"><Pencil size={14} />Editar módulo</summary><form className="cms-form compact-form" action={updateModule} encType="multipart/form-data"><input type="hidden" name="courseId" value={course.id} /><input type="hidden" name="moduleId" value={module.id} /><label>Título<input name="title" defaultValue={module.title} required /></label><label>Descrição<textarea name="description" defaultValue={module.description} rows={3} /></label><label>Status<select name="status" defaultValue={module.status}>{CONTENT_STATUSES.map((value) => <option key={value} value={value}>{statusLabel[value]}</option>)}</select></label><ContentAttachmentsField attachments={attachmentsByModule.get(module.id)} /><button className="ghost-button" type="submit">Salvar módulo</button></form></details>
                 <details className="inline-editor"><summary className="text-link"><CirclePlus size={14} />Nova aula</summary><form className="cms-form compact-form inline-create" action={createLesson}><input type="hidden" name="courseId" value={course.id} /><input type="hidden" name="moduleId" value={module.id} /><label>Título da aula<input name="title" required minLength={3} /></label><button className="primary-button" type="submit">Criar e editar</button></form></details>
               </footer>
             </article>
@@ -76,10 +81,11 @@ export default async function CourseEditorPage({ params }: { params: Promise<{ c
 
       <details className="panel add-module-panel" open={modules.length === 0}>
         <summary><CirclePlus size={17} />Adicionar módulo</summary>
-        <form className="cms-form form-grid" action={createModule}>
+        <form className="cms-form form-grid" action={createModule} encType="multipart/form-data">
           <input type="hidden" name="courseId" value={course.id} />
           <label>Título<input name="title" required minLength={3} maxLength={140} /></label>
           <label className="full-field">Descrição<textarea name="description" rows={3} maxLength={2000} /></label>
+          <ContentAttachmentsField />
           <div className="form-actions"><button className="primary-button" type="submit"><BookOpen size={16} />Criar módulo</button></div>
         </form>
       </details>
