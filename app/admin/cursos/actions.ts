@@ -140,6 +140,23 @@ async function changeModuleStatus(formData: FormData, nextStatus: "published" | 
 export async function publishModule(formData: FormData) { await changeModuleStatus(formData, "published"); }
 export async function revertModuleToDraft(formData: FormData) { await changeModuleStatus(formData, "draft"); }
 
+export async function publishCourseContent(formData: FormData) {
+  const actor = await contentActor();
+  const input = z.object({ courseId: identifier }).parse(Object.fromEntries(formData));
+  const course = await contentRepository.getCourse(input.courseId);
+  if (!course) throw new Error("Curso não encontrado.");
+  await contentRepository.updateCourse(input.courseId, { title: course.title, slug: course.slug, description: course.description, status: "published" }, actor.id);
+  const modules = await contentRepository.listModules(input.courseId);
+  for (const module of modules) {
+    await contentRepository.updateModule(module.id, { courseId: input.courseId, title: module.title, description: module.description, status: "published" }, actor.id);
+    const lessons = await contentRepository.listLessons(module.id);
+    for (const lesson of lessons) await contentRepository.updateLesson(lesson.id, { ...lesson, status: "published", scheduledAt: null }, actor.id);
+  }
+  revalidatePath(`/admin/cursos/${input.courseId}`);
+  revalidatePath("/app/curso");
+  redirect(`/admin/cursos/${input.courseId}?contentPublished=1`);
+}
+
 export async function createModule(formData: FormData) {
   const actor = await contentActor();
   const input = moduleSchema.parse(Object.fromEntries(formData));
