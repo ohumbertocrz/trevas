@@ -7,6 +7,7 @@ import { assertCanManageContent } from "@/application/content/permissions";
 import { requireAdministrativeUser } from "@/application/access/session";
 import { CONTENT_STATUSES, slugifyContent } from "@/domain/content/entities";
 import { laboratoryRepository } from "@/infrastructure/repositories/firebase-laboratory-repository";
+import { saveContentAttachments } from "@/application/services/content-attachments";
 
 const laboratorySchema = z.object({
   laboratoryId: z.string().min(1).optional(),
@@ -54,6 +55,7 @@ export async function createLaboratory(formData: FormData) {
   const user = await actor();
   const input = parseForm(formData);
   const id = await laboratoryRepository.createLaboratory(inputFromForm({ ...input, status: "draft" }), user.id);
+  await saveContentAttachments(formData, "laboratory", id, user.id);
   redirect(`/admin/laboratorio?edit=${id}`);
 }
 
@@ -62,6 +64,7 @@ export async function updateLaboratory(formData: FormData) {
   const input = parseForm(formData);
   if (!input.laboratoryId) throw new Error("Laboratório não informado.");
   await laboratoryRepository.updateLaboratory(input.laboratoryId, inputFromForm(input), user.id);
+  await saveContentAttachments(formData, "laboratory", input.laboratoryId, user.id);
   revalidatePath("/admin/laboratorio");
   revalidatePath("/app/laboratorio");
   revalidatePath(`/app/laboratorio/${input.slug}`);

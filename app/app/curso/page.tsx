@@ -3,6 +3,8 @@ import Link from "next/link";
 import { getAuthenticatedUser } from "@/application/access/session";
 import { memberContentRepository } from "@/infrastructure/repositories/firebase-member-content-repository";
 import { progressRepository } from "@/infrastructure/repositories/firebase-progress-repository";
+import { contentAttachmentRepository } from "@/infrastructure/repositories/firebase-content-attachment-repository";
+import { ContentAttachments } from "@/components/member/content-attachments";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +14,7 @@ export default async function CoursePage() {
   const allLessonIds = courses.flatMap((course) => course.modules.flatMap((module) => module.lessons.map((lesson) => lesson.id)));
   const progress = user ? await progressRepository.getLessonsProgress(user.id, allLessonIds) : [];
   const progressByLesson = new Map(progress.map((item) => [item.lessonId, item]));
+  const moduleAttachments = new Map((await Promise.all(courses.flatMap((course) => course.modules).map(async (module) => [module.id, await contentAttachmentRepository.list("module", module.id)] as const))));
 
   return (
     <div className="page">
@@ -25,7 +28,7 @@ export default async function CoursePage() {
               {course.modules.map((module, moduleIndex) => (
                 <details className="panel member-module" key={module.id} open={moduleIndex === 0}>
                   <summary><span className="module-number">{String(moduleIndex + 1).padStart(2, "0")}</span><span><strong>{module.title}</strong><small>{module.lessons.length} aulas</small></span><ChevronRight /></summary>
-                  <div className="member-lesson-list">
+                  <ContentAttachments attachments={moduleAttachments.get(module.id) ?? []} /><div className="member-lesson-list">
                     {module.lessons.length === 0 && <p className="inline-empty">Nenhuma aula publicada.</p>}
                     {module.lessons.map((lesson, lessonIndex) => (
                       <Link href={`/app/aula/${lesson.slug}`} className="member-lesson-row" key={lesson.id}>

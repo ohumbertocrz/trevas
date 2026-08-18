@@ -10,6 +10,8 @@ import { memberContentRepository } from "@/infrastructure/repositories/firebase-
 import { progressRepository } from "@/infrastructure/repositories/firebase-progress-repository";
 import { archiveRepository } from "@/infrastructure/repositories/firebase-archive-repository";
 import { lessonNoteRepository } from "@/infrastructure/repositories/firebase-lesson-note-repository";
+import { contentAttachmentRepository } from "@/infrastructure/repositories/firebase-content-attachment-repository";
+import { ContentAttachments } from "@/components/member/content-attachments";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +25,7 @@ export default async function LessonPage({ params, searchParams }: { params: Pro
   const progress = user ? await progressRepository.getLessonProgress(user.id, lesson.id) : null;
   const archived = user ? await archiveRepository.getForUser(user.id, "lesson", lesson.id) : null;
   const notes = user ? await lessonNoteRepository.listForLesson(user.id, lesson.id) : [];
+  const attachments = await contentAttachmentRepository.list("lesson", lesson.id);
 
   return (
     <div className="page lesson-page">
@@ -37,6 +40,7 @@ export default async function LessonPage({ params, searchParams }: { params: Pro
       {user && <p className="content-identification lesson-identification">Conteúdo licenciado para {user.displayName} · {user.email.replace(/^(.{3}).*(@.*)$/, "$1***$2")}</p>}
       {lesson.transcript && <details className="panel transcript-panel"><summary>Transcrição</summary><div>{lesson.transcript}</div></details>}
       {materials.length > 0 && <section className="lesson-materials"><span className="kicker">Materiais</span><div className="lesson-material-list">{materials.map((material) => <a className="lesson-material" href={material.storagePath.startsWith("protected/") ? `/api/materials/${material.id}/download` : material.sourceUrl} target="_blank" rel="noreferrer" key={material.id}><FileText size={17} /><span><strong>{material.title}</strong><small>{material.description || "Material complementar"}{user && " · Identificado para seu acesso"}</small></span><ExternalLink size={15} /></a>)}</div></section>}
+      <ContentAttachments attachments={attachments} />
       {user && <LessonNotes lessonId={lesson.id} slug={lesson.slug} notes={notes.map((note) => ({ id: note.id, content: note.content, timestampSeconds: note.timestampSeconds, createdAt: note.createdAt?.toISOString() ?? null }))} />}
       <nav className="lesson-navigation" aria-label="Navegação entre aulas">
         {previous ? <Link className="ghost-button" href={`/app/aula/${previous.slug}`}><ArrowLeft size={15} />Aula anterior</Link> : <span />}

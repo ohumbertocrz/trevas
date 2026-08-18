@@ -274,6 +274,16 @@ button { color: inherit; }
   .cms-form .thumbnail-preview .thumbnail-remove { position: absolute; top: 8px; right: 8px; z-index: 1; display: grid; place-items: center; width: 28px; height: 28px; min-height: 0; padding: 0; border: 1px solid rgba(255,255,255,.3); border-radius: 50%; background: rgba(12,13,12,.82); color: var(--cream); cursor: pointer; }
   .cms-form .thumbnail-preview .thumbnail-remove:hover { background: #8e241d; border-color: #d46d63; }
   .cms-form .thumbnail-preview .thumbnail-remove input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .content-attachments { margin-top: 22px; }
+  .content-attachments-field { display: grid; gap: 8px; }
+  .content-attachments-field .field-label { display: inline-flex; align-items: center; gap: 6px; color: var(--gold-light); font-size: 12px; }
+  .content-attachments-field input[type=file] { min-height: 42px; padding: 9px 11px; }
+  .content-attachment-list { display: grid; gap: 7px; margin-top: 8px; }
+  .content-attachment-row { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 8px 10px; border: 1px solid var(--line); background: #111311; color: var(--text); }
+  .content-attachment-row > a, .content-attachment-row > span { min-width: 0; display: flex; align-items: center; gap: 9px; flex: 1; }
+  .content-attachment-row span, .content-attachment-row a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .content-attachment-row small { margin-left: auto; color: var(--muted); white-space: nowrap; font-size: 11px; }
+  .content-attachment-row svg { flex-shrink: 0; color: var(--gold); }
 @keyframes drm-drift { from { transform: translate(0, 0); } to { transform: translate(28vw, 14vh); } }
 .transcript-media-upload small { display: flex; align-items: center; gap: 5px; color: var(--muted); }
 .transcript-media-upload small svg { color: var(--gold); }
