@@ -284,6 +284,8 @@ button { color: inherit; }
   .content-attachment-row span, .content-attachment-row a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .content-attachment-row small { margin-left: auto; color: var(--muted); white-space: nowrap; font-size: 11px; }
   .content-attachment-row svg { flex-shrink: 0; color: var(--gold); }
+  .course-heading-actions { display: flex; align-items: end; gap: 18px; flex-wrap: wrap; }
+  .course-heading-actions .primary-button { white-space: nowrap; }
 @keyframes drm-drift { from { transform: translate(0, 0); } to { transform: translate(28vw, 14vh); } }
 .transcript-media-upload small { display: flex; align-items: center; gap: 5px; color: var(--muted); }
 .transcript-media-upload small svg { color: var(--gold); }
