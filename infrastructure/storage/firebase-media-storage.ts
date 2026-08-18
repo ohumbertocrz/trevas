@@ -36,6 +36,11 @@ export class FirebaseMediaStorage implements MediaStorage {
     return { bytes: download[0], contentType: metadata[0].contentType || "application/octet-stream" };
   }
 
+  async deleteLessonThumbnail(path: string) {
+    if (!path.startsWith("lesson-thumbnails/")) throw new Error("Caminho de thumbnail inválido.");
+    await adminStorage().bucket().file(path).delete({ ignoreNotFound: true });
+  }
+
   async saveLessonTranscriptMedia(input: { actorId: string; courseId: string; lessonId: string; file: File }) {
     if (!TRANSCRIPT_MEDIA_TYPES.includes(input.file.type as (typeof TRANSCRIPT_MEDIA_TYPES)[number])) throw new Error("Formato de áudio ou vídeo não suportado.");
     const extension = input.file.type.split("/")[1].replace("quicktime", "mov");

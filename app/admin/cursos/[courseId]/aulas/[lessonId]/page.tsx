@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Check, RotateCcw, Save, Trash2 } from "lucide-react";
 import { CONTENT_STATUSES, isVimeoEmbedUrl } from "@/domain/content/entities";
 import { contentRepository } from "@/infrastructure/repositories/firebase-content-repository";
 import { libraryRepository } from "@/infrastructure/repositories/firebase-library-repository";
-import { updateLesson } from "../../../actions";
+import { publishLesson, revertLessonToDraft, updateLesson } from "../../../actions";
+import { Toast } from "@/components/ui/toast";
 import { TranscriptControls } from "@/components/admin/transcript-controls";
 import { TranscriptMediaUpload } from "@/components/admin/transcript-media-upload";
 
@@ -18,7 +19,7 @@ function localDateTime(date: Date | null) {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
 
-export default async function LessonEditorPage({ params }: { params: Promise<{ courseId: string; lessonId: string }> }) {
+export default async function LessonEditorPage({ params, searchParams }: { params: Promise<{ courseId: string; lessonId: string }>; searchParams: Promise<{ saved?: string; published?: string; draft?: string }> }) {
   const { courseId, lessonId } = await params;
   const [course, lesson] = await Promise.all([contentRepository.getCourse(courseId), contentRepository.getLesson(lessonId)]);
   if (!course || !lesson || lesson.courseId !== courseId) notFound();
@@ -28,11 +29,15 @@ export default async function LessonEditorPage({ params }: { params: Promise<{ c
     libraryRepository.listMaterialsForLesson(lesson.id),
   ]);
   const linkedIds = new Set(linkedMaterials.map((material) => material.id));
+  const feedback = await searchParams;
+  const currentModule = modules.find((module) => module.id === lesson.moduleId);
 
   return (
     <div className="admin-page content-admin-page lesson-editor-page">
       <Link href={`/admin/cursos/${course.id}`} className="back-link"><ArrowLeft size={16} />{course.title}</Link>
-      <header className="page-heading"><div><span className="kicker">Editor de aula</span><h1>{lesson.title}</h1><p>Alterações permanecem privadas até a publicação.</p></div><span className={`status large-status ${lesson.status === "published" ? "" : "warning"}`}>{statusLabel[lesson.status]}</span></header>
+      {feedback.saved === "1" && <Toast message="Aula salva como rascunho." />}{feedback.published === "1" && <Toast message="Aula publicada." />}{feedback.draft === "1" && <Toast message="Aula revertida para rascunho." />}
+      {(course.status !== "published" || currentModule?.status !== "published") && <div className="form-warning">Para o aluno ver esta aula, publique primeiro o curso e o módulo.</div>}
+      <header className="page-heading"><div><span className="kicker">Editor de aula</span><h1>{lesson.title}</h1><p>Conteúdo e mídia ficam privados até a publicação.</p></div><div className="lesson-status-actions"><span className={`status large-status ${lesson.status === "published" ? "" : "warning"}`}>{statusLabel[lesson.status]}</span>{lesson.status === "published" ? <form action={revertLessonToDraft}><input type="hidden" name="courseId" value={course.id} /><input type="hidden" name="lessonId" value={lesson.id} /><button className="ghost-button" type="submit"><RotateCcw size={16} />Reverter para rascunho</button></form> : <form action={publishLesson}><input type="hidden" name="courseId" value={course.id} /><input type="hidden" name="lessonId" value={lesson.id} /><button className="primary-button" type="submit"><Check size={16} />Publicar aula</button></form>}</div></header>
 
       <form className="panel cms-form lesson-form form-grid" action={updateLesson}>
         <input type="hidden" name="lessonId" value={lesson.id} />
@@ -47,15 +52,16 @@ export default async function LessonEditorPage({ params }: { params: Promise<{ c
         <input type="hidden" name="thumbnailPath" value={lesson.thumbnailPath} />
         <label className="full-field">Thumbnail (JPG, PNG ou WebP, até 2 MB)<input name="thumbnail" type="file" accept="image/jpeg,image/png,image/webp" /></label>
         {lesson.thumbnailPath && <div className="media-preview full-field"><img src={`/api/media/lesson-thumbnail/${lesson.id}`} alt={`Thumbnail de ${lesson.title}`} /></div>}
+        {lesson.thumbnailPath && <label className="thumbnail-remove"><input type="checkbox" name="removeThumbnail" /> <Trash2 size={15} />Remover thumbnail atual</label>}
         {isVimeoEmbedUrl(lesson.vimeoEmbedUrl) && lesson.vimeoEmbedUrl && <div className="vimeo-preview full-field"><iframe src={lesson.vimeoEmbedUrl} title={`Prévia de ${lesson.title}`} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen /></div>}
         <label className="full-field">Tags, separadas por vírgula<input name="tags" defaultValue={lesson.tags.join(", ")} maxLength={1000} /></label>
         <fieldset className="material-picker full-field"><legend>Materiais vinculados</legend>{materials.length === 0 ? <p className="inline-empty">Nenhum material cadastrado na Biblioteca.</p> : materials.map((material) => <label className="material-option" key={material.id}><input type="checkbox" name="materialIds" value={material.id} defaultChecked={linkedIds.has(material.id)} /><span><strong>{material.title}</strong><small>{material.type} · {material.visibility === "published" ? "Publicado" : "Rascunho"}</small></span></label>)}</fieldset>
         <label className="full-field">Transcrição<textarea name="transcript" defaultValue={lesson.transcript} rows={14} maxLength={200000} /></label>
         <div className="full-field"><span className="field-label">Mídia para transcrição</span><TranscriptMediaUpload courseId={course.id} lessonId={lesson.id} initialPath={lesson.transcriptMediaPath} /></div>
         <TranscriptControls lessonId={lesson.id} status={lesson.transcriptStatus} hasMedia={Boolean(lesson.transcriptMediaPath)} draft={lesson.transcriptDraft} />
-        <label>Status<select name="status" defaultValue={lesson.status}>{CONTENT_STATUSES.map((value) => <option key={value} value={value}>{statusLabel[value]}</option>)}</select></label>
+        <input type="hidden" name="status" value={lesson.status === "published" ? "published" : "draft"} />
         <label>Publicação agendada<input name="scheduledAt" type="datetime-local" defaultValue={localDateTime(lesson.scheduledAt)} /></label>
-        <div className="form-actions full-field"><button className="primary-button" type="submit"><Save size={16} />Salvar aula</button></div>
+        <div className="form-actions full-field"><button className="primary-button" type="submit"><Save size={16} />{lesson.status === "published" ? "Salvar alterações" : "Salvar rascunho"}</button></div>
       </form>
     </div>
   );
