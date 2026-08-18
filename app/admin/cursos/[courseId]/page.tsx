@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowDown, ArrowLeft, ArrowUp, BookOpen, Check, CirclePlus, Pencil, RotateCcw, Settings2 } from "lucide-react";
 import { CONTENT_STATUSES } from "@/domain/content/entities";
 import { contentRepository } from "@/infrastructure/repositories/firebase-content-repository";
-import { createLesson, createModule, moveLesson, moveModule, publishCourse, revertCourseToDraft, updateCourse, updateModule } from "../actions";
+import { createLesson, createModule, moveLesson, moveModule, publishCourse, publishModule, revertCourseToDraft, revertModuleToDraft, updateCourse, updateModule } from "../actions";
 import { ContentAttachmentsField } from "@/components/admin/content-attachments-field";
 import { contentAttachmentRepository } from "@/infrastructure/repositories/firebase-content-attachment-repository";
 
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 const statusLabel = { draft: "Rascunho", published: "Publicado", unpublished: "Despublicado", scheduled: "Agendado" } as const;
 
-export default async function CourseEditorPage({ params, searchParams }: { params: Promise<{ courseId: string }>; searchParams: Promise<{ published?: string; draft?: string }> }) {
+export default async function CourseEditorPage({ params, searchParams }: { params: Promise<{ courseId: string }>; searchParams: Promise<{ published?: string; draft?: string; modulePublished?: string; moduleDraft?: string }> }) {
   const { courseId } = await params;
   const [course, modules] = await Promise.all([contentRepository.getCourse(courseId), contentRepository.listModules(courseId)]);
   if (!course) notFound();
@@ -22,7 +22,7 @@ export default async function CourseEditorPage({ params, searchParams }: { param
   return (
     <div className="admin-page content-admin-page">
       <Link href="/admin/cursos" className="back-link"><ArrowLeft size={16} />Cursos</Link>
-      {feedback.published === "1" && <div className="app-toast" role="status">Curso publicado.</div>}{feedback.draft === "1" && <div className="app-toast" role="status">Curso revertido para rascunho.</div>}
+      {feedback.published === "1" && <div className="app-toast" role="status">Curso publicado.</div>}{feedback.draft === "1" && <div className="app-toast" role="status">Curso revertido para rascunho.</div>}{feedback.modulePublished === "1" && <div className="app-toast" role="status">Módulo publicado.</div>}{feedback.moduleDraft === "1" && <div className="app-toast" role="status">Módulo revertido para rascunho.</div>}
       <header className="page-heading">
         <div><span className="kicker">Editor de curso</span><h1>{course.title}</h1><p>{course.moduleCount} módulos · {course.lessonCount} aulas</p></div>
         <div className="lesson-status-actions"><span className={`status large-status ${course.status === "published" ? "" : "warning"}`}>{statusLabel[course.status]}</span>{course.status === "published" ? <form action={revertCourseToDraft}><input type="hidden" name="courseId" value={course.id} /><button className="ghost-button" type="submit"><RotateCcw size={16} />Reverter para rascunho</button></form> : <form action={publishCourse}><input type="hidden" name="courseId" value={course.id} /><button className="primary-button" type="submit"><Check size={16} />Publicar curso</button></form>}</div>
@@ -49,7 +49,7 @@ export default async function CourseEditorPage({ params, searchParams }: { param
               <header className="module-admin-header">
                 <span className="module-order">{String(moduleIndex + 1).padStart(2, "0")}</span>
                 <span className="module-admin-title"><strong>{module.title}</strong><small>{module.lessonCount} aulas · {statusLabel[module.status]}</small></span>
-                <div className="reorder-actions">
+                <div className="lesson-status-actions"><span className={`status ${module.status === "published" ? "" : "warning"}`}>{statusLabel[module.status]}</span>{module.status === "published" ? <form action={revertModuleToDraft}><input type="hidden" name="courseId" value={course.id} /><input type="hidden" name="moduleId" value={module.id} /><button className="ghost-button" type="submit"><RotateCcw size={15} />Reverter módulo</button></form> : <form action={publishModule}><input type="hidden" name="courseId" value={course.id} /><input type="hidden" name="moduleId" value={module.id} /><button className="primary-button" type="submit"><Check size={15} />Publicar módulo</button></form>}</div><div className="reorder-actions">
                   <form action={moveModule}><input type="hidden" name="courseId" value={course.id} /><input type="hidden" name="moduleId" value={module.id} /><input type="hidden" name="direction" value="up" /><button className="icon-button bordered" disabled={moduleIndex === 0} title="Mover módulo para cima" aria-label="Mover módulo para cima"><ArrowUp size={16} /></button></form>
                   <form action={moveModule}><input type="hidden" name="courseId" value={course.id} /><input type="hidden" name="moduleId" value={module.id} /><input type="hidden" name="direction" value="down" /><button className="icon-button bordered" disabled={moduleIndex === modules.length - 1} title="Mover módulo para baixo" aria-label="Mover módulo para baixo"><ArrowDown size={16} /></button></form>
                 </div>

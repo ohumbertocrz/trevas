@@ -39,7 +39,7 @@ export default async function DashboardPage() {
               <h2>{lesson.title}</h2>
               <div className="continue-actions">
                 <div><small>{lesson.progress}% concluído</small><div className="progress"><span style={{ width: `${lesson.progress}%` }} /></div></div>
-                <Link className="primary-button" href={`/app/aula/${lesson.id}`}>Continuar aula <ArrowRight size={16} /></Link>
+                {lesson.id ? <Link className="primary-button" href={`/app/aula/${lesson.id}`}>Continuar aula <ArrowRight size={16} /></Link> : <Link className="primary-button" href="/app/curso">Explorar curso <ArrowRight size={16} /></Link>}
               </div>
             </div>
           </div>
