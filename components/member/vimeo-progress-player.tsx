@@ -3,6 +3,17 @@
 import Player from "@vimeo/player";
 import { useEffect, useRef, useState } from "react";
 
+let activeVimeoPlayer: Player | null = null;
+
+export async function getCurrentVimeoTime() {
+  if (!activeVimeoPlayer) return null;
+  try {
+    return await activeVimeoPlayer.getCurrentTime();
+  } catch {
+    return null;
+  }
+}
+
 interface VimeoProgressPlayerProps {
   embedUrl: string;
   lessonId: string;
@@ -23,6 +34,7 @@ export function VimeoProgressPlayer({ embedUrl, lessonId, initialPositionSeconds
   useEffect(() => {
     if (!iframeRef.current) return;
     const player = new Player(iframeRef.current);
+    activeVimeoPlayer = player;
     let disposed = false;
 
     const sendProgress = async (force = false) => {
@@ -51,9 +63,10 @@ export function VimeoProgressPlayer({ embedUrl, lessonId, initialPositionSeconds
     return () => {
       disposed = true;
       void sendProgress(true);
+      if (activeVimeoPlayer === player) activeVimeoPlayer = null;
       player.destroy().catch(() => undefined);
     };
-  }, [initialPercent, initialPositionSeconds, lessonId]);
+  }, [embedUrl, lessonId]);
 
   const maskedEmail = viewerEmail.replace(/^(.{3}).*(@.*)$/, "$1***$2");
   return (
