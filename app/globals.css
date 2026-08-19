@@ -217,7 +217,10 @@ button { color: inherit; }
 .note-form { display: grid; gap: 12px; padding: 16px; }
 .note-form label { display: grid; gap: 6px; color: var(--muted); font-size: .8rem; }
 .note-form textarea, .note-form input { width: 100%; border: 1px solid var(--line); border-radius: 4px; outline: 0; background: #101210; color: var(--text); padding: 10px; font: inherit; }
-.note-form textarea:focus, .note-form input:focus { border-color: var(--gold); }
+  .note-form textarea:focus, .note-form input:focus { border-color: var(--gold); }
+  .note-timecode-toggle { display: flex; align-items: center; gap: 8px; color: var(--text); font-size: .82rem; }
+  .note-timecode-toggle input { width: 16px; min-width: 16px; height: 16px; min-height: 16px; accent-color: var(--gold); }
+  .note-timecode-hint { color: var(--muted); font-size: .76rem; }
 .notes-list { display: grid; gap: 8px; margin-top: 10px; }
 .note-item { display: flex; align-items: start; justify-content: space-between; gap: 14px; padding: 14px 16px; }
 .note-item p { margin: 8px 0; white-space: pre-wrap; line-height: 1.5; }
