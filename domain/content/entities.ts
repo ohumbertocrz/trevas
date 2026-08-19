@@ -22,6 +22,7 @@ export interface CourseModuleContent {
   courseId: string;
   title: string;
   description: string;
+  isFree: boolean;
   status: ContentStatus;
   order: number;
   lessonCount: number;

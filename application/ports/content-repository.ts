@@ -11,6 +11,7 @@ export interface ModuleInput {
   courseId: string;
   title: string;
   description: string;
+  isFree: boolean;
   status: ContentStatus;
 }
 

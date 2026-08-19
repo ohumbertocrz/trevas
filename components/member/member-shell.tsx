@@ -22,7 +22,7 @@ const navigation = [
   { href: "/app/laboratorio", label: "Laboratório", icon: FlaskConical },
   { href: "/app/arquivo", label: "Arquivo", icon: Files },
   { href: "/app/meu-arquivo", label: "Meu Arquivo", icon: Bookmark },
-  { href: "/app/consulte", label: "Consulte as Trevas", icon: Bot },
+  { href: "/app/consulte", label: "Analisar com IA", icon: Bot },
   { href: "/app/biblioteca", label: "Biblioteca", icon: Library },
   { href: "/app/avisos", label: "Avisos", icon: Bell },
 ];

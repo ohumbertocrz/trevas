@@ -14,6 +14,7 @@ export interface MemberModule {
   id: string;
   title: string;
   description: string;
+  isFree: boolean;
   order: number;
   lessons: MemberLessonSummary[];
 }
@@ -28,7 +29,7 @@ export interface MemberCourse {
 
 export interface MemberLessonContext {
   course: Pick<MemberCourse, "id" | "slug" | "title">;
-  module: Pick<MemberModule, "id" | "title" | "order">;
+  module: Pick<MemberModule, "id" | "title" | "order" | "isFree">;
   lesson: LessonContent;
   materials: Material[];
   previous: MemberLessonSummary | null;

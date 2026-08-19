@@ -1,6 +1,7 @@
 import { ArrowLeft, ArrowRight, ExternalLink, FileText } from "lucide-react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { canAccessLesson } from "@/application/access/lesson-access";
 import { getAuthenticatedUser } from "@/application/access/session";
 import { ArchiveToggleButton } from "@/components/member/archive-toggle-button";
 import { LessonNotes } from "@/components/member/lesson-notes";
@@ -22,6 +23,8 @@ export default async function LessonPage({ params, searchParams }: { params: Pro
   if (!context) notFound();
   const { course, module, lesson, materials, previous, next } = context;
   const user = await getAuthenticatedUser();
+  if (!user) redirect(`/login?returnTo=${encodeURIComponent(`/app/aula/${slug}`)}`);
+  if (!(await canAccessLesson(user, lesson.id))) redirect("/sem-acesso");
   const progress = user ? await progressRepository.getLessonProgress(user.id, lesson.id) : null;
   const archived = user ? await archiveRepository.getForUser(user.id, "lesson", lesson.id) : null;
   const notes = user ? await lessonNoteRepository.listForLesson(user.id, lesson.id) : [];

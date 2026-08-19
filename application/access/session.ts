@@ -31,6 +31,12 @@ export async function requireMember(returnTo = "/app") {
   return user;
 }
 
+export async function requireAuthenticatedUser(returnTo = "/app") {
+  const user = await getAuthenticatedUser();
+  if (!user) redirect(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+  return user;
+}
+
 export async function requireAdministrativeUser() {
   const user = await getAuthenticatedUser();
   if (!user) redirect("/login?returnTo=%2Fadmin");

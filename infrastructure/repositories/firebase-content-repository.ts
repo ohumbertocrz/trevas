@@ -143,6 +143,7 @@ export class FirebaseContentRepository implements ContentRepository {
         courseId,
         title: String(data.title ?? ""),
         description: String(data.description ?? ""),
+        isFree: data.isFree === true,
         status: asStatus(data.status),
         order: Number(data.order ?? 0),
         lessonCount: lessons.data().count,

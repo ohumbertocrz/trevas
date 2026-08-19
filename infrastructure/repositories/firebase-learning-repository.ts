@@ -4,13 +4,18 @@ import type { StudentDashboard } from "@/domain/dashboard/entities";
 import { archiveRepository } from "@/infrastructure/repositories/firebase-archive-repository";
 import { memberContentRepository } from "@/infrastructure/repositories/firebase-member-content-repository";
 import { progressRepository } from "@/infrastructure/repositories/firebase-progress-repository";
+import { hasActiveEntitlement, hasAdministrativeAccess } from "@/application/access/permissions";
+import { accessRepository } from "@/infrastructure/repositories/firebase-access-repository";
 
 const archiveTypeLabel = { lesson: "Aula", material: "Material", case: "Caso", reference: "Livro" } as const;
 
 export class FirebaseLearningRepository implements LearningRepository {
   async getDashboard(userId: string): Promise<StudentDashboard> {
     const courses = await memberContentRepository.listPublishedCourses();
-    const lessons = courses.flatMap((course) => course.modules.flatMap((module) => module.lessons.map((lesson) => ({ course, module, lesson }))));
+    const allLessons = courses.flatMap((course) => course.modules.flatMap((module) => module.lessons.map((lesson) => ({ course, module, lesson }))));
+    const profile = await accessRepository.getProfile(userId);
+    const entitlement = await accessRepository.getProductEntitlement(userId, "trevas-completo");
+    const lessons = profile && (hasAdministrativeAccess(profile.roles) || hasActiveEntitlement(entitlement)) ? allLessons : allLessons.filter(({ module }) => module.isFree);
     const progress = await progressRepository.getLessonsProgress(userId, lessons.map(({ lesson }) => lesson.id));
     const progressByLesson = new Map(progress.map((item) => [item.lessonId, item]));
     const continueItem = [...lessons].sort((left, right) => (progressByLesson.get(right.lesson.id)?.updatedAt?.getTime() ?? 0) - (progressByLesson.get(left.lesson.id)?.updatedAt?.getTime() ?? 0)).find(({ lesson }) => progressByLesson.has(lesson.id) && !progressByLesson.get(lesson.id)?.completed) ?? lessons.find(({ lesson }) => !progressByLesson.get(lesson.id)?.completed) ?? lessons[0];

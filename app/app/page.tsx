@@ -3,10 +3,10 @@ import Link from "next/link";
 import { ActivityIcon } from "@/components/member/activity-icon";
 import { ResizableColumns } from "@/components/ui/resizable-columns";
 import { learningRepository } from "@/infrastructure/repositories/firebase-learning-repository";
-import { requireMember } from "@/application/access/session";
+import { requireAuthenticatedUser } from "@/application/access/session";
 
 export default async function DashboardPage() {
-  const user = await requireMember();
+  const user = await requireAuthenticatedUser();
   const [dashboard, lesson] = await Promise.all([
     learningRepository.getDashboard(user.id),
     learningRepository.getContinueLesson(user.id),
