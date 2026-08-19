@@ -27,6 +27,7 @@ export class FirebaseMemberContentRepository implements MemberContentRepository 
           id: module.id,
           title: module.title,
           description: module.description,
+          isFree: module.isFree,
           order: module.order,
           lessons: (await contentRepository.listLessons(module.id))
             .filter((lesson) => lesson.status === "published")
@@ -47,7 +48,7 @@ export class FirebaseMemberContentRepository implements MemberContentRepository 
       if (!lesson || lesson.status !== "published") return null;
       return {
         course: { id: course.id, slug: course.slug, title: course.title },
-        module: { id: found.module.id, title: found.module.title, order: found.module.order },
+        module: { id: found.module.id, title: found.module.title, order: found.module.order, isFree: found.module.isFree },
         lesson,
         materials: (await libraryRepository.listMaterialsForLesson(lesson.id)).filter((material) => material.visibility === "published"),
         previous: index > 0 ? orderedLessons[index - 1].lesson : null,

@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Boxes, Cable, Captions, FileText, FlaskConical, Gauge, Mail, Settings, ShieldCheck, Users } from "lucide-react";
+import { Bell, Boxes, Cable, Captions, FileText, FlaskConical, FolderOpen, Gauge, Mail, Settings, ShieldCheck, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignOutButton } from "@/components/auth/sign-out-button";
@@ -8,6 +8,7 @@ import { SignOutButton } from "@/components/auth/sign-out-button";
 const items = [
   { href: "/admin", label: "Visão Geral", icon: Gauge },
   { href: "/admin/cursos", label: "Conteúdo", icon: Boxes },
+  { href: "/admin/midia", label: "Biblioteca de mídia", icon: FolderOpen },
   { href: "/admin/transcricoes", label: "Transcrições", icon: Captions },
   { href: "/admin/arquivo", label: "Arquivo Trevas", icon: FileText },
   { href: "/admin/referencias", label: "Biblioteca", icon: FileText },

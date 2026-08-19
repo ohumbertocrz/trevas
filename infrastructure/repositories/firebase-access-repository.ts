@@ -60,8 +60,9 @@ export class FirebaseAccessRepository implements AccessRepository {
       return { ...input, roles, status: "active" };
     }
 
-    await reference.set({ email: input.email, displayName: input.displayName, roles, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    return profileFromData(snapshot.id, { ...snapshot.data(), email: input.email, displayName: input.displayName, roles });
+    const nextStatus = snapshot.data()?.status === "invited" ? "active" : snapshot.data()?.status;
+    await reference.set({ email: input.email, displayName: input.displayName, roles, ...(nextStatus ? { status: nextStatus } : {}), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    return profileFromData(snapshot.id, { ...snapshot.data(), email: input.email, displayName: input.displayName, roles, ...(nextStatus ? { status: nextStatus } : {}) });
   }
 
   async getProductEntitlement(userId: string, productId: string) {

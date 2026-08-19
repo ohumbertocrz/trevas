@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from "react";
 const sections = ["Enquadramento", "Escolhas linguísticas", "Omissões", "Recursos emocionais", "Técnicas identificadas"] as const;
 type Analysis = Record<(typeof sections)[number], string> & { ConteúdosRelacionados?: string };
 
-export function ConsultAi() {
+export function ConsultAi({ disabled = false }: { disabled?: boolean }) {
+  if (disabled) return <section className="panel ai-coming-soon" aria-labelledby="ai-coming-soon-title"><Sparkles size={24} /><h2 id="ai-coming-soon-title">A ser implementado</h2><p>A análise com IA estará disponível em breve.</p></section>;
   const [text, setText] = useState(""); const [image, setImage] = useState<{ data: string; mimeType: string } | null>(null); const [analysis, setAnalysis] = useState<Analysis | null>(null); const [quota, setQuota] = useState({ used: 0, limit: 5 }); const [pending, setPending] = useState(false); const [message, setMessage] = useState<string | null>(null); const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => { void fetch("/api/ai/usage").then((response) => response.ok ? response.json() : null).then((value) => value && setQuota(value)); }, []);
   function chooseImage(file: File | undefined) { if (!file) return; if (!file.type.startsWith("image/") || file.size > 7 * 1024 * 1024) { setMessage("Escolha uma imagem de até 7 MB."); return; } const reader = new FileReader(); reader.onload = () => setImage({ data: String(reader.result).split(",")[1] ?? "", mimeType: file.type }); reader.readAsDataURL(file); }

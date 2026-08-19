@@ -2,17 +2,24 @@ import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
 import { getAuthenticatedUser } from "@/application/access/session";
 import { hasActiveEntitlement, hasAdministrativeAccess } from "@/application/access/permissions";
+import { canAccessLesson } from "@/application/access/lesson-access";
 import { libraryRepository } from "@/infrastructure/repositories/firebase-library-repository";
+import { adminFirestore } from "@/infrastructure/firebase/admin";
 import { adminStorage } from "@/infrastructure/firebase/admin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ materialId: string }> }) {
   const user = await getAuthenticatedUser();
-  if (!user || (!hasAdministrativeAccess(user.roles) && !hasActiveEntitlement(user.entitlement))) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   const { materialId } = await params;
   const material = (await libraryRepository.listMaterials()).find((item) => item.id === materialId);
   if (!material || material.visibility !== "published" || !material.storagePath.startsWith("protected/")) return NextResponse.json({ error: "Material não disponível." }, { status: 404 });
+  if (!hasAdministrativeAccess(user.roles) && !hasActiveEntitlement(user.entitlement)) {
+    const links = await adminFirestore().collection("lessonMaterials").where("materialId", "==", materialId).get();
+    const allowed = (await Promise.all(links.docs.map(async (link) => canAccessLesson(user, String(link.data().lessonId ?? ""))))).some(Boolean);
+    if (!allowed) return NextResponse.json({ error: "Acesso não autorizado." }, { status: 403 });
+  }
   const file = adminStorage().bucket().file(material.storagePath);
   const [bytes, metadata] = await Promise.all([file.download(), file.getMetadata()]);
   const contentType = metadata[0].contentType ?? "application/octet-stream";

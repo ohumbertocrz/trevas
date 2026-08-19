@@ -28,6 +28,7 @@ const moduleSchema = z.object({
   courseId: identifier,
   title: z.string().trim().min(3).max(140),
   description: z.string().trim().max(2000).optional().default(""),
+  isFree: z.preprocess((value) => value === "on" || value === true, z.boolean()).default(false),
   status: status.optional().default("draft"),
 });
 
@@ -131,7 +132,7 @@ async function changeModuleStatus(formData: FormData, nextStatus: "published" | 
     const course = await contentRepository.getCourse(input.courseId);
     if (course?.status !== "published") throw new Error("Publique o curso antes de publicar o módulo.");
   }
-  await contentRepository.updateModule(input.moduleId, { courseId: input.courseId, title: module.title, description: module.description, status: nextStatus }, actor.id);
+  await contentRepository.updateModule(input.moduleId, { courseId: input.courseId, title: module.title, description: module.description, isFree: module.isFree, status: nextStatus }, actor.id);
   revalidatePath(`/admin/cursos/${input.courseId}`);
   revalidatePath("/app/curso");
   redirect(`/admin/cursos/${input.courseId}?${nextStatus === "published" ? "modulePublished=1" : "moduleDraft=1"}`);
@@ -148,7 +149,7 @@ export async function publishCourseContent(formData: FormData) {
   await contentRepository.updateCourse(input.courseId, { title: course.title, slug: course.slug, description: course.description, status: "published" }, actor.id);
   const modules = await contentRepository.listModules(input.courseId);
   for (const module of modules) {
-    await contentRepository.updateModule(module.id, { courseId: input.courseId, title: module.title, description: module.description, status: "published" }, actor.id);
+    await contentRepository.updateModule(module.id, { courseId: input.courseId, title: module.title, description: module.description, isFree: module.isFree, status: "published" }, actor.id);
     const lessons = await contentRepository.listLessons(module.id);
     for (const lesson of lessons) await contentRepository.updateLesson(lesson.id, { ...lesson, status: "published", scheduledAt: null }, actor.id);
   }
@@ -172,6 +173,7 @@ export async function updateModule(formData: FormData) {
     courseId: input.courseId,
     title: input.title,
     description: input.description,
+    isFree: input.isFree,
     status: input.status,
   }, actor.id);
   await saveContentAttachments(formData, "module", input.moduleId, actor.id);

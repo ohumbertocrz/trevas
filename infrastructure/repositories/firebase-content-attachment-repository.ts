@@ -9,6 +9,15 @@ function fromData(id: string, data: FirebaseFirestore.DocumentData): ContentAtta
 }
 
 export class FirebaseContentAttachmentRepository implements ContentAttachmentRepository {
+  async listAll() {
+    const snapshot = await adminFirestore().collection("contentAttachments").get();
+    return snapshot.docs.map((document) => fromData(document.id, document.data())).sort((a, b) => {
+      const dateA = a.createdAt?.getTime() ?? 0;
+      const dateB = b.createdAt?.getTime() ?? 0;
+      return dateB - dateA || a.name.localeCompare(b.name);
+    });
+  }
+
   async list(ownerType: AttachmentOwnerType, ownerId: string) {
     const snapshot = await adminFirestore().collection("contentAttachments").where("ownerType", "==", ownerType).where("ownerId", "==", ownerId).get();
     return snapshot.docs.map((document) => fromData(document.id, document.data())).sort((a, b) => a.name.localeCompare(b.name));
