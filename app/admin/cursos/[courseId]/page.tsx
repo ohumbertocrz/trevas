@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowDown, ArrowLeft, ArrowUp, BookOpen, Check, CirclePlus, Pencil, RotateCcw, Settings2 } from "lucide-react";
 import { CONTENT_STATUSES } from "@/domain/content/entities";
 import { contentRepository } from "@/infrastructure/repositories/firebase-content-repository";
-import { createLesson, createModule, moveLesson, moveModule, publishCourse, publishModule, revertCourseToDraft, revertModuleToDraft, updateCourse, updateModule } from "../actions";
+import { createLesson, createModule, moveLesson, moveModule, publishCourse, publishCourseContent, publishModule, revertCourseToDraft, revertModuleToDraft, updateCourse, updateModule } from "../actions";
 import { ContentAttachmentsField } from "@/components/admin/content-attachments-field";
 import { contentAttachmentRepository } from "@/infrastructure/repositories/firebase-content-attachment-repository";
 
@@ -11,21 +11,22 @@ export const dynamic = "force-dynamic";
 
 const statusLabel = { draft: "Rascunho", published: "Publicado", unpublished: "Despublicado", scheduled: "Agendado" } as const;
 
-export default async function CourseEditorPage({ params, searchParams }: { params: Promise<{ courseId: string }>; searchParams: Promise<{ published?: string; draft?: string; modulePublished?: string; moduleDraft?: string }> }) {
+export default async function CourseEditorPage({ params, searchParams }: { params: Promise<{ courseId: string }>; searchParams: Promise<{ published?: string; draft?: string; modulePublished?: string; moduleDraft?: string; contentPublished?: string }> }) {
   const { courseId } = await params;
   const [course, modules] = await Promise.all([contentRepository.getCourse(courseId), contentRepository.listModules(courseId)]);
   if (!course) notFound();
   const feedback = await searchParams;
   const lessonsByModule = new Map((await Promise.all(modules.map(async (module) => [module.id, await contentRepository.listLessons(module.id)] as const))));
   const attachmentsByModule = new Map((await Promise.all(modules.map(async (module) => [module.id, await contentAttachmentRepository.list("module", module.id)] as const))));
+  const hasUnpublishedContent = modules.some((module) => module.status !== "published" || (lessonsByModule.get(module.id) ?? []).some((lesson) => lesson.status !== "published"));
 
   return (
     <div className="admin-page content-admin-page">
       <Link href="/admin/cursos" className="back-link"><ArrowLeft size={16} />Cursos</Link>
-      {feedback.published === "1" && <div className="app-toast" role="status">Curso publicado.</div>}{feedback.draft === "1" && <div className="app-toast" role="status">Curso revertido para rascunho.</div>}{feedback.modulePublished === "1" && <div className="app-toast" role="status">Módulo publicado.</div>}{feedback.moduleDraft === "1" && <div className="app-toast" role="status">Módulo revertido para rascunho.</div>}
+      {feedback.published === "1" && <div className="app-toast" role="status">Curso publicado.</div>}{feedback.draft === "1" && <div className="app-toast" role="status">Curso revertido para rascunho.</div>}{feedback.modulePublished === "1" && <div className="app-toast" role="status">Módulo publicado.</div>}{feedback.moduleDraft === "1" && <div className="app-toast" role="status">Módulo revertido para rascunho.</div>}{feedback.contentPublished === "1" && <div className="app-toast" role="status">Curso, módulos e aulas publicados.</div>}
       <header className="page-heading">
         <div><span className="kicker">Editor de curso</span><h1>{course.title}</h1><p>{course.moduleCount} módulos · {course.lessonCount} aulas</p></div>
-        <div className="lesson-status-actions"><span className={`status large-status ${course.status === "published" ? "" : "warning"}`}>{statusLabel[course.status]}</span>{course.status === "published" ? <form action={revertCourseToDraft}><input type="hidden" name="courseId" value={course.id} /><button className="ghost-button" type="submit"><RotateCcw size={16} />Reverter para rascunho</button></form> : <form action={publishCourse}><input type="hidden" name="courseId" value={course.id} /><button className="primary-button" type="submit"><Check size={16} />Publicar curso</button></form>}</div>
+        <div className="lesson-status-actions"><span className={`status large-status ${course.status === "published" ? "" : "warning"}`}>{statusLabel[course.status]}</span>{course.status === "published" && hasUnpublishedContent && <form action={publishCourseContent}><input type="hidden" name="courseId" value={course.id} /><button className="primary-button" type="submit"><Check size={16} />Publicar todo o conteúdo</button></form>}{course.status === "published" ? <form action={revertCourseToDraft}><input type="hidden" name="courseId" value={course.id} /><button className="ghost-button" type="submit"><RotateCcw size={16} />Reverter para rascunho</button></form> : <form action={publishCourse}><input type="hidden" name="courseId" value={course.id} /><button className="primary-button" type="submit"><Check size={16} />Publicar curso</button></form>}</div>
       </header>
 
       <details className="panel cms-settings">
