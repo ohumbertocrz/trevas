@@ -9,4 +9,5 @@ export interface CommunicationRepository {
   listUserDeliveries(userId: string, limit?: number): Promise<Array<{ id: string; communicationId: string; title: string; content: string; status: string; createdAt: Date | null; openedAt: Date | null }>>;
   countUnreadDeliveries(userId: string): Promise<number>;
   markDeliveryOpened(deliveryId: string, userId: string): Promise<void>;
+  deleteDelivery(deliveryId: string, userId: string): Promise<void>;
 }
