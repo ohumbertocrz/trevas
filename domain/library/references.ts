@@ -7,11 +7,12 @@ export interface LibraryReference {
   id: string;
   title: string;
   author: string;
-  coverUrl: string;
+  coverPath: string;
   description: string;
   type: ReferenceType;
   tags: string[];
   referenceUrl: string;
+  vimeoEmbedUrl: string;
   lessonIds: string[];
   caseIds: string[];
   status: ContentStatus;
