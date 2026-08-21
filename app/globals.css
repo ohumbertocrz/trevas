@@ -316,7 +316,12 @@ button { color: inherit; }
   .cms-form .thumbnail-preview .thumbnail-remove:hover { background: #8e241d; border-color: #d46d63; }
   .cms-form .thumbnail-preview .thumbnail-remove input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
   .content-attachments { margin-top: 22px; }
-  .content-attachments-field { display: grid; gap: 8px; }
+.content-attachments-field { display: grid; gap: 8px; }
+.file-picker { min-width: 0; min-height: 42px; display: flex; align-items: center; border: 1px solid var(--line); border-radius: 4px; background: #101210; overflow: hidden; }
+.file-picker-input { position: absolute; width: 1px !important; height: 1px !important; opacity: 0; pointer-events: none; }
+.file-picker-button { min-height: 30px; margin: 5px 0 5px 6px; padding: 6px 9px; display: inline-flex !important; align-items: center; flex: 0 0 auto; border: 1px solid var(--line-gold); border-radius: 3px; background: rgba(196, 161, 99, .08); color: var(--cream) !important; cursor: pointer; font-size: 12px !important; }
+.file-picker-button:hover { border-color: var(--gold); background: rgba(196, 161, 99, .16); }
+.file-picker-name { min-width: 0; padding: 0 10px; overflow: hidden; color: var(--cream); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
   .content-attachments-field .field-label { display: inline-flex; align-items: center; gap: 6px; color: var(--gold-light); font-size: 12px; }
   .content-attachments-field input[type=file] { min-height: 42px; padding: 9px 11px; }
   .content-attachment-list { display: grid; gap: 7px; margin-top: 8px; }
@@ -426,6 +431,17 @@ button { color: inherit; }
 .cms-form input, .cms-form select { min-height: 42px; padding: 0 11px; }
 .cms-form textarea { padding: 10px 11px; resize: vertical; line-height: 1.5; }
 .cms-form input:focus, .cms-form textarea:focus, .cms-form select:focus { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(196, 161, 99, .1); }
+.cms-form .toggle-field { width: fit-content; display: inline-flex; grid-template-columns: none; align-items: center; gap: 9px; cursor: pointer; }
+.toggle-field > input { position: absolute; width: 1px; height: 1px; padding: 0; opacity: 0; pointer-events: none; }
+.toggle-control { position: relative; width: 38px; height: 22px; flex: 0 0 auto; border: 1px solid var(--line-gold); border-radius: 999px; background: #171a17; transition: background .15s ease, border-color .15s ease; }
+.toggle-control::after { content: ""; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); transition: transform .15s ease, background .15s ease; }
+.toggle-field > input:checked + .toggle-control { border-color: var(--red); background: rgba(142, 36, 29, .55); }
+.toggle-field > input:checked + .toggle-control::after { transform: translateX(16px); background: var(--cream); }
+.toggle-field > input:focus-visible + .toggle-control { outline: 2px solid var(--gold); outline-offset: 2px; }
+.toggle-label { display: inline-flex; gap: 7px; color: var(--muted); }
+.toggle-paid { color: var(--gold-light); }
+.toggle-field:has(> input:checked) .toggle-paid { color: var(--muted); }
+.toggle-field:has(> input:checked) .toggle-free { color: var(--gold-light); }
 .compact-form { display: grid; gap: 14px; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .full-field { grid-column: 1 / -1; }

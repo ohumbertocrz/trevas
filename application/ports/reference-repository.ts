@@ -4,11 +4,12 @@ import type { ContentStatus } from "@/domain/content/entities";
 export interface ReferenceInput {
   title: string;
   author: string;
-  coverUrl: string;
+  coverPath: string;
   description: string;
   type: ReferenceType;
   tags: string[];
   referenceUrl: string;
+  vimeoEmbedUrl: string;
   lessonIds: string[];
   caseIds: string[];
   status: ContentStatus;
